@@ -1,0 +1,142 @@
+/* Prism — PR Review TUI Theme */
+
+Screen {
+    background: $surface;
+}
+
+/* ── Header ────────────────────────────────── */
+
+#header-bar {
+    dock: top;
+    height: 3;
+    background: $primary-background;
+    color: $text;
+    padding: 0 2;
+}
+
+#header-bar .pr-title {
+    text-style: bold;
+}
+
+/* ── Main content area ─────────────────────── */
+
+#main-content {
+    layout: horizontal;
+}
+
+#file-tree-panel {
+    width: 30;
+    min-width: 20;
+    border-right: tall $primary-background;
+}
+
+#file-tree-panel:focus-within {
+    border-right: tall $accent;
+}
+
+#diff-viewer {
+    width: 1fr;
+}
+
+#diff-viewer:focus-within {
+    border: tall $accent;
+}
+
+#ai-panel {
+    width: 35;
+    min-width: 20;
+    border-left: tall $primary-background;
+    padding: 1 2;
+}
+
+#ai-panel:focus-within {
+    border-left: tall $accent;
+}
+
+/* ── File tree ─────────────────────────────── */
+
+FileTreePanel Tree {
+    padding: 0 1;
+}
+
+FileTreePanel .tree-label-added {
+    color: $success;
+}
+
+FileTreePanel .tree-label-removed {
+    color: $error;
+}
+
+FileTreePanel .tree-label-modified {
+    color: $warning;
+}
+
+/* ── Diff viewer ───────────────────────────── */
+
+DiffViewer RichLog {
+    padding: 0 1;
+}
+
+DiffViewer #diff-loading {
+    content-align: center middle;
+    color: $text-muted;
+    text-style: italic;
+}
+
+/* ── Comments Panel ────────────────────────── */
+
+CommentsPanel {
+    background: $surface;
+}
+
+/* ── Comment Composer Modal ─────────────────── */
+
+CommentComposerScreen {
+    align: center middle;
+}
+
+#comment-dialog {
+    width: 70;
+    height: auto;
+    max-height: 30;
+    background: $surface;
+    border: tall $accent;
+    padding: 1 2;
+}
+
+#comment-context {
+    color: $text-muted;
+    text-style: italic;
+    margin-bottom: 1;
+}
+
+#comment-area {
+    height: 10;
+    margin-bottom: 1;
+}
+
+#comment-error {
+    color: $error;
+    height: 1;
+}
+
+#comment-buttons {
+    layout: horizontal;
+    align: right middle;
+    height: 3;
+}
+
+/* ── Footer help bar ───────────────────────── */
+
+#help-footer {
+    dock: bottom;
+    height: 1;
+    background: $primary-background;
+    color: $text-muted;
+    padding: 0 2;
+}
+
+#help-footer .key {
+    text-style: bold;
+    color: $accent;
+}
