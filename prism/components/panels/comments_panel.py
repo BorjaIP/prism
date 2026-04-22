@@ -1,5 +1,3 @@
-"""Comments panel — tabbed view of PR reviews and inline comments."""
-
 from __future__ import annotations
 
 from textual import work

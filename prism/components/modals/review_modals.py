@@ -1,5 +1,3 @@
-"""Modal dialogs for PR review actions."""
-
 from __future__ import annotations
 
 from textual.app import ComposeResult

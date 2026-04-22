@@ -8,32 +8,15 @@ from textual.app import ComposeResult
 from textual.widget import Widget
 from textual.widgets import Static
 
+from prism.components.blocks.badges import CI_LABELS, REVIEW_LABELS, STATE_LABEL_STYLES
 from prism.models import PRSummary
-
-_CI_LABELS = {
-    "success": ("✓ passing", "green"),
-    "failure": ("✗ failing", "red"),
-    "error": ("✗ error", "red"),
-    "pending": ("… pending", "yellow"),
-}
-
-_REVIEW_LABELS = {
-    "APPROVED": ("✓ approved", "green"),
-    "CHANGES_REQUESTED": ("! changes requested", "red"),
-}
-
-_STATE_STYLES = {
-    "open": ("open", "bold green"),
-    "merged": ("merged", "bold magenta"),
-    "closed": ("closed", "bold red"),
-}
 
 
 def _build_preview(summary: PRSummary) -> RenderableType:
     lines = Text()
 
     # Title
-    state_label, state_style = _STATE_STYLES.get(summary.state, (summary.state, "bold"))
+    state_label, state_style = STATE_LABEL_STYLES.get(summary.state, (summary.state, "bold"))
     lines.append(f"#{summary.number} ", style="bold dim")
     lines.append(f"[{state_label}]", style=state_style)
     lines.append("\n")
@@ -49,13 +32,13 @@ def _build_preview(summary: PRSummary) -> RenderableType:
 
     # CI status
     if summary.checks_status:
-        ci_label, ci_style = _CI_LABELS.get(summary.checks_status, (summary.checks_status, "white"))
+        ci_label, ci_style = CI_LABELS.get(summary.checks_status, (summary.checks_status, "white"))
         lines.append("CI: ", style="bold")
         lines.append(ci_label + "\n", style=ci_style)
 
     # Review status
     if summary.review_state:
-        rv_label, rv_style = _REVIEW_LABELS.get(summary.review_state, (summary.review_state, "white"))
+        rv_label, rv_style = REVIEW_LABELS.get(summary.review_state, (summary.review_state, "white"))
         lines.append("Review: ", style="bold")
         lines.append(rv_label + "\n", style=rv_style)
 

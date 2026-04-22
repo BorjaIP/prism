@@ -1,5 +1,3 @@
-"""Reply composer modal — collects in-thread reply body."""
-
 from __future__ import annotations
 
 from textual.app import ComposeResult

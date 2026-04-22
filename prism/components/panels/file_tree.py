@@ -1,5 +1,3 @@
-"""File tree panel showing changed files in a PR."""
-
 from __future__ import annotations
 
 from pathlib import PurePosixPath
@@ -11,6 +9,7 @@ from textual.widget import Widget
 from textual.widgets import Tree
 from textual.widgets.tree import TreeNode
 
+from prism.components.blocks.badges import RISK_CHARS
 from prism.models import PRComment, PRFile
 
 STATUS_ICONS = {
@@ -45,6 +44,7 @@ class FileTreePanel(Widget):
         super().__init__(id="file-tree-panel")
         self._files = files
         self._comment_counts = self._build_comment_counts(review_comments or [])
+        self._file_nodes: dict[str, TreeNode[PRFile]] = {}
 
     @staticmethod
     def _build_comment_counts(comments: list[PRComment]) -> dict[str, int]:
@@ -62,6 +62,7 @@ class FileTreePanel(Widget):
         """Replace the file list and re-render the tree (e.g. after refresh)."""
         self._files = files
         self._comment_counts = self._build_comment_counts(review_comments or [])
+        self._file_nodes = {}
         tree = self.query_one("#file-tree", Tree)
         tree.clear()
         self._populate_tree(tree.root)
@@ -97,7 +98,8 @@ class FileTreePanel(Widget):
 
             # Add file leaf
             label = self._file_label(pr_file, parts[-1])
-            parent.add_leaf(label, data=pr_file)
+            node = parent.add_leaf(label, data=pr_file)
+            self._file_nodes[pr_file.filename] = node
 
     def _file_label(self, pr_file: PRFile, name: str) -> Text:
         icon, color = STATUS_ICONS.get(pr_file.status, ("?", "white"))
@@ -110,6 +112,18 @@ class FileTreePanel(Widget):
         if count:
             label.append(f" {count}💬", style="dim")
         return label
+
+    def update_risk_badge(self, filename: str, risk: str) -> None:
+        """Append a risk badge to the file tree node label (call on main thread)."""
+        node = self._file_nodes.get(filename)
+        if node is None:
+            return
+        pr_file: PRFile = node.data  # type: ignore[assignment]
+        name = PurePosixPath(filename).name
+        label = self._file_label(pr_file, name)
+        char, color = RISK_CHARS.get(risk.lower(), ("?", "white"))
+        label.append(f" [{char}]", style=f"bold {color}")
+        node.set_label(label)
 
     def on_tree_node_selected(self, event: Tree.NodeSelected[PRFile]) -> None:
         """Forward file selection as a message."""

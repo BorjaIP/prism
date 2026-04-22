@@ -1,5 +1,3 @@
-"""CommentList widget — shows inline review comments for the current file."""
-
 from __future__ import annotations
 
 from textual.app import ComposeResult
@@ -8,16 +6,8 @@ from textual.message import Message
 from textual.widget import Widget
 from textual.widgets import ListItem, ListView, Static
 
+from prism.components.blocks.comment_item import comment_label
 from prism.models import PRComment
-
-
-def _comment_label(comment: PRComment) -> str:
-    indent = "  ↳ " if comment.in_reply_to_id is not None else ""
-    line_info = f" (line {comment.line})" if comment.line else ""
-    preview = comment.body[:80].replace("\n", " ")
-    if len(comment.body) > 80:
-        preview += "…"
-    return f"{indent}@{comment.author}{line_info}: {preview}"
 
 
 class CommentList(Widget):
@@ -75,7 +65,7 @@ class CommentList(Widget):
         lv.clear()
         if comments:
             for comment in comments:
-                lv.append(ListItem(Static(_comment_label(comment))))
+                lv.append(ListItem(Static(comment_label(comment))))
             lv.display = True
             empty.display = False
         else:

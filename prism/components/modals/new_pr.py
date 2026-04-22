@@ -1,10 +1,7 @@
-"""New PR screen — input a GitHub URL or repo+number to open a PR."""
-
 from __future__ import annotations
 
 import re
 
-from textual import work
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Vertical

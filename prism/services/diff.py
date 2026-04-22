@@ -1,5 +1,3 @@
-"""Diff rendering service — uses delta if available, otherwise plain coloring."""
-
 from __future__ import annotations
 
 import shutil

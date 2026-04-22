@@ -1,5 +1,3 @@
-"""Diff viewer panel — renders syntax-highlighted diffs."""
-
 from __future__ import annotations
 
 from textual import work
@@ -8,9 +6,9 @@ from textual.containers import Vertical
 from textual.widget import Widget
 from textual.widgets import RichLog, Static
 
+from prism.components.panels.comment_list import CommentList
 from prism.models import PRComment, PRFile
 from prism.services.diff import render_diff
-from prism.widgets.comment_list import CommentList
 
 
 class DiffViewer(Widget):
@@ -74,9 +72,7 @@ class DiffViewer(Widget):
         self.border_title = f"DIFF  {basename}"
         self.border_subtitle = f"+{pr_file.additions} -{pr_file.deletions}"
         self._load_diff(pr_file)
-        file_comments = [
-            c for c in self._review_comments if c.path == pr_file.filename
-        ]
+        file_comments = [c for c in self._review_comments if c.path == pr_file.filename]
         self.query_one(CommentList).set_comments(file_comments)
 
     @work(thread=True, exclusive=True)

@@ -1,5 +1,3 @@
-"""Prism theme system — built-in themes + base16-shell integration."""
-
 from __future__ import annotations
 
 import re
@@ -13,6 +11,7 @@ BASE16_SCRIPTS_DIR = Path.home() / ".config" / "base16-shell" / "scripts"
 
 
 # ── Model ─────────────────────────────────────────────────────────────────────
+
 
 class PrismTheme(BaseModel):
     """Full theme definition: Prism-specific diff/badge colors + Textual palette."""
@@ -65,8 +64,17 @@ class PrismTheme(BaseModel):
                 "badge-pending": self.badge_pending,
             },
         }
-        for field in ("secondary", "background", "surface", "panel",
-                      "accent", "foreground", "error", "warning", "success"):
+        for field in (
+            "secondary",
+            "background",
+            "surface",
+            "panel",
+            "accent",
+            "foreground",
+            "error",
+            "warning",
+            "success",
+        ):
             val = getattr(self, field)
             if val:
                 kwargs[field] = val
@@ -224,6 +232,7 @@ _BUILTIN: dict[str, PrismTheme] = {
 
 # ── base16 integration ────────────────────────────────────────────────────────
 
+
 def _parse_base16_script(path: Path) -> dict[str, str]:
     """Return {colorXX: '#rrggbb', ...} from a base16 shell script."""
     colors: dict[str, str] = {}
@@ -239,18 +248,18 @@ def _parse_base16_script(path: Path) -> dict[str, str]:
 
 def _theme_from_base16_colors(name: str, c: dict[str, str]) -> PrismTheme:
     """Build a PrismTheme from a parsed base16 color dict."""
-    bg      = c.get("color00", "#1d1f21")   # base00 — darkest bg
-    surface = c.get("color18", "#282a2e")   # base01
-    panel   = c.get("color19", "#373b41")   # base02
-    muted   = c.get("color08", "#969896")   # base03 — comments
-    red     = c.get("color01", "#cc6666")   # base08
-    green   = c.get("color02", "#b5bd68")   # base0B
-    yellow  = c.get("color03", "#f0c674")   # base0A
-    blue    = c.get("color04", "#81a2be")   # base0D
-    magenta = c.get("color05", "#b294bb")   # base0E
-    cyan    = c.get("color06", "#8abeb7")   # base0C
-    fg      = c.get("color07", "#c5c8c6")   # base05 — default fg
-    orange  = c.get("color16", "#de935f")   # base09
+    bg = c.get("color00", "#1d1f21")  # base00 — darkest bg
+    surface = c.get("color18", "#282a2e")  # base01
+    panel = c.get("color19", "#373b41")  # base02
+    muted = c.get("color08", "#969896")  # base03 — comments
+    red = c.get("color01", "#cc6666")  # base08
+    green = c.get("color02", "#b5bd68")  # base0B
+    yellow = c.get("color03", "#f0c674")  # base0A
+    blue = c.get("color04", "#81a2be")  # base0D
+    magenta = c.get("color05", "#b294bb")  # base0E
+    cyan = c.get("color06", "#8abeb7")  # base0C
+    fg = c.get("color07", "#c5c8c6")  # base05 — default fg
+    orange = c.get("color16", "#de935f")  # base09
 
     return PrismTheme(
         name=name,
@@ -320,12 +329,12 @@ def list_base16_themes() -> list[str]:
     if not BASE16_SCRIPTS_DIR.exists():
         return []
     return sorted(
-        p.stem.removeprefix("base16-")
-        for p in BASE16_SCRIPTS_DIR.glob("base16-*.sh")
+        p.stem.removeprefix("base16-") for p in BASE16_SCRIPTS_DIR.glob("base16-*.sh")
     )
 
 
 # ── Public loader ─────────────────────────────────────────────────────────────
+
 
 def load_theme(name: str) -> PrismTheme:
     """Load a theme by name.
@@ -351,6 +360,7 @@ def load_theme(name: str) -> PrismTheme:
     path = THEMES_DIR / f"{name}.toml"
     if path.exists():
         import tomllib
+
         with open(path, "rb") as f:
             data = tomllib.load(f)
         return PrismTheme(name=name, **data)

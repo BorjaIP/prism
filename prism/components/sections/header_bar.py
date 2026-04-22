@@ -7,25 +7,8 @@ from textual.app import ComposeResult
 from textual.widget import Widget
 from textual.widgets import Static
 
+from prism.components.blocks.badges import CHECKS_STATUS_STYLES, REVIEW_STATE_STYLES, STATE_STYLES
 from prism.models import PRMetadata
-
-STATE_STYLES = {
-    "open": ("OPEN", "bold white on dark_green"),
-    "closed": ("CLOSED", "bold white on dark_red"),
-    "merged": ("MERGED", "bold white on dark_violet"),
-}
-
-REVIEW_STATE_STYLES = {
-    "APPROVED": (" ✓ APPROVED ", "bold white on dark_green"),
-    "CHANGES_REQUESTED": (" ✗ CHANGES REQUESTED ", "bold white on dark_red"),
-}
-
-CHECKS_STATUS_STYLES = {
-    "success": (" ✓ CI ", "bold white on dark_green"),
-    "failure": (" ✗ CI ", "bold white on dark_red"),
-    "error": (" ✗ CI ", "bold white on dark_red"),
-    "pending": (" ◷ CI ", "bold black on yellow"),
-}
 
 
 class HeaderBar(Widget):

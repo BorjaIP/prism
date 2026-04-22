@@ -9,25 +9,8 @@ from textual.message import Message
 from textual.widget import Widget
 from textual.widgets import DataTable
 
+from prism.components.blocks.badges import CI_ICONS, REVIEW_ICONS, STATE_COLORS
 from prism.models import PRSummary
-
-_CI_ICONS = {
-    "success": ("✓", "green"),
-    "failure": ("✗", "red"),
-    "error": ("✗", "red"),
-    "pending": ("…", "yellow"),
-}
-
-_REVIEW_ICONS = {
-    "APPROVED": ("✓", "green"),
-    "CHANGES_REQUESTED": ("!", "red"),
-}
-
-_STATE_COLORS = {
-    "open": "green",
-    "merged": "magenta",
-    "closed": "red",
-}
 
 
 def _relative_time(dt: datetime) -> str:
@@ -99,9 +82,9 @@ class PRListWidget(Widget):
         table.clear()
         for summary in summaries:
             updated = _relative_time(summary.updated_at)
-            ci_icon, ci_color = _CI_ICONS.get(summary.checks_status or "", ("·", "dim"))
-            review_icon, review_color = _REVIEW_ICONS.get(summary.review_state or "", ("·", "dim"))
-            state_color = _STATE_COLORS.get(summary.state, "white")
+            ci_icon, ci_color = CI_ICONS.get(summary.checks_status or "", ("·", "dim"))
+            review_icon, review_color = REVIEW_ICONS.get(summary.review_state or "", ("·", "dim"))
+            state_color = STATE_COLORS.get(summary.state, "white")
             table.add_row(
                 updated,
                 Text(str(summary.number), style=state_color),

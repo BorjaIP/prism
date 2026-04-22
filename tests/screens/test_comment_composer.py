@@ -7,7 +7,7 @@ import pytest
 from textual.app import App, ComposeResult
 
 from prism.models import Comment
-from prism.screens.comment_composer import CommentComposerScreen
+from prism.components.modals.comment_composer import CommentComposerScreen
 
 
 class _ComposerApp(App):

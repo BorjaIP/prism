@@ -1,5 +1,3 @@
-"""Comment composer modal screen."""
-
 from __future__ import annotations
 
 from textual.app import ComposeResult
@@ -50,11 +48,13 @@ class CommentComposerScreen(ModalScreen[Comment | None]):
         if not body:
             self.query_one("#comment-error", Static).update("Comment cannot be empty.")
             return
-        self.dismiss(Comment(
-            file_path=self._file_path,
-            line_number=self._line_number,
-            body=body,
-        ))
+        self.dismiss(
+            Comment(
+                file_path=self._file_path,
+                line_number=self._line_number,
+                body=body,
+            )
+        )
 
     def action_cancel(self) -> None:
         self.dismiss(None)

@@ -1,5 +1,3 @@
-"""Review screen — main 3-panel layout for PR code review."""
-
 from __future__ import annotations
 
 import subprocess
@@ -8,22 +6,25 @@ import webbrowser
 from textual import work
 from textual.app import ComposeResult
 from textual.binding import Binding
-from textual.containers import Horizontal
 from textual.reactive import reactive
 from textual.screen import Screen
 from textual.widgets import Footer
 
+from prism.components.modals.comment_composer import CommentComposerScreen
+from prism.components.modals.reply_composer import ReplyComposer
+from prism.components.modals.review_modals import (
+    ApproveConfirmModal,
+    QuitConfirmModal,
+    RequestChangesModal,
+)
+from prism.components.panels.ai_panel import AIPanel
+from prism.components.panels.comment_list import CommentList
+from prism.components.panels.comments_panel import CommentsPanel
+from prism.components.panels.diff_viewer import DiffViewer
+from prism.components.panels.file_tree import FileTreePanel
+from prism.components.sections.header_bar import HeaderBar
+from prism.components.sections.review_workspace import ReviewWorkspace
 from prism.models import Comment, PRComment, PRMetadata
-from prism.screens.comment_composer import CommentComposerScreen
-from prism.widgets.ai_panel import AIPanel
-from prism.widgets.comment_list import CommentList
-from prism.widgets.comments_panel import CommentsPanel
-from prism.widgets.diff_viewer import DiffViewer
-from prism.widgets.file_tree import FileTreePanel
-from prism.widgets.header_bar import HeaderBar
-from prism.widgets.panel_resizer import PanelResizer
-from prism.widgets.reply_composer import ReplyComposer
-from prism.widgets.review_modal import ApproveConfirmModal, QuitConfirmModal, RequestChangesModal
 
 _PANEL_CYCLE = [None, "diff", "comments"]
 
@@ -120,6 +121,21 @@ class ReviewScreen(Screen):
             id="toggle-ai",
             tooltip="Show/hide the AI analysis panel",
         ),
+        Binding(
+            "S",
+            "reanalyze",
+            "Re-analyze",
+            id="reanalyze",
+            tooltip="Force re-analyze the current file with AI (bypasses cache)",
+        ),
+        Binding(
+            "ctrl+s",
+            "post_suggestion",
+            "Post AI suggestion",
+            id="post-suggestion",
+            tooltip="Post the AI-suggested comment to the PR",
+            show=False,
+        ),
     ]
 
     # Tracks which panel is currently expanded ("diff" | "comments" | None)
@@ -136,17 +152,9 @@ class ReviewScreen(Screen):
 
         config = load_config()
         yield HeaderBar(self._pr)
-        with Horizontal(id="main-content"):
-            yield FileTreePanel(self._pr.files, self._pr.review_comments)
-            yield PanelResizer("file-tree-panel", "diff-viewer")
-            yield DiffViewer(self._pr.review_comments)
-            yield PanelResizer("diff-viewer", "comments-panel")
-            yield CommentsPanel(self._repo_slug, self._pr_number)
-            yield PanelResizer("comments-panel", "ai-panel")
-            ai = AIPanel()
-            if not config.show_ai_panel:
-                ai.display = False
-            yield ai
+        yield ReviewWorkspace(
+            self._pr, self._repo_slug, self._pr_number, show_ai=config.show_ai_panel
+        )
         yield Footer()
 
     def on_mount(self) -> None:
@@ -155,6 +163,7 @@ class ReviewScreen(Screen):
             first_file = self._pr.files[0]
             self.query_one(DiffViewer).show_diff(first_file)
             self.query_one(CommentsPanel).set_selected_file(first_file.filename)
+            self.query_one(AIPanel).set_file(first_file)
 
     # ── Reactive layout expand ──────────────────────────────────────────────
 
@@ -186,6 +195,13 @@ class ReviewScreen(Screen):
         """Handle file selection from the tree."""
         self.query_one(DiffViewer).show_diff(event.pr_file)
         self.query_one(CommentsPanel).set_selected_file(event.pr_file.filename)
+        self.query_one(AIPanel).set_file(event.pr_file)
+
+    def on_ai_panel_analysis_complete(self, event: AIPanel.AnalysisComplete) -> None:
+        """Propagate AI risk level to the file tree badge."""
+        self.query_one(FileTreePanel).update_risk_badge(
+            event.filename, event.analysis.risk
+        )
 
     # ── Real refresh ────────────────────────────────────────────────────────
 
@@ -198,6 +214,7 @@ class ReviewScreen(Screen):
     def _do_refresh(self) -> None:
         """Background worker: fetch fresh PR data and update widgets."""
         from github import GithubException
+
         from prism.services.github import fetch_pr
 
         try:
@@ -256,6 +273,7 @@ class ReviewScreen(Screen):
     @work(thread=True)
     def _post_comment(self, body: str, path: str, line: int) -> None:
         from github import GithubException
+
         from prism.services.github import post_comment
 
         try:
@@ -302,6 +320,7 @@ class ReviewScreen(Screen):
     @work(thread=True)
     def _do_approve(self) -> None:
         from github import GithubException
+
         from prism.services.github import submit_review
 
         try:
@@ -337,6 +356,7 @@ class ReviewScreen(Screen):
     @work(thread=True)
     def _do_request_changes(self, body: str) -> None:
         from github import GithubException
+
         from prism.services.github import submit_review
 
         try:
@@ -394,6 +414,7 @@ class ReviewScreen(Screen):
     @work(thread=True)
     def _do_post_reply(self, parent_comment: PRComment, body: str) -> None:
         from github import GithubException
+
         from prism.services.github import post_reply
 
         try:
@@ -403,9 +424,7 @@ class ReviewScreen(Screen):
                 comment_id=parent_comment.id,
                 body=body,
             )
-            self.app.call_from_thread(
-                self.query_one(CommentsPanel).add_comment, reply
-            )
+            self.app.call_from_thread(self.query_one(CommentsPanel).add_comment, reply)
             self.app.call_from_thread(
                 self.notify, "Reply posted", severity="information"
             )
@@ -445,6 +464,43 @@ class ReviewScreen(Screen):
         panel = self.query_one(AIPanel)
         panel.display = not panel.display
 
+    def action_reanalyze(self) -> None:
+        """Force re-analyze the current file with AI, bypassing the cache."""
+        self.query_one(AIPanel).trigger_reanalyze()
+
+    def action_post_suggestion(self) -> None:
+        """Post the AI-suggested comment to the PR as a PR-level comment."""
+        suggestion = self.query_one(AIPanel).get_suggestion()
+        if not suggestion:
+            self.notify("No AI suggestion available.", severity="warning")
+            return
+        self._do_post_suggestion(suggestion)
+
+    @work(thread=True)
+    def _do_post_suggestion(self, body: str) -> None:
+        from github import GithubException
+
+        from prism.services.github import post_pr_comment
+
+        try:
+            post_pr_comment(self._repo_slug, self._pr_number, body)
+            self.app.call_from_thread(
+                self.notify,
+                "AI suggestion posted as PR comment.",
+                severity="information",
+            )
+        except GithubException as e:
+            msg = e.data.get("message", str(e)) if isinstance(e.data, dict) else str(e)
+            self.app.call_from_thread(
+                self.notify, f"GitHub error: {msg}", severity="error"
+            )
+        except RuntimeError as e:
+            self.app.call_from_thread(self.notify, str(e), severity="error")
+        except Exception as e:
+            self.app.call_from_thread(
+                self.notify, f"Failed to post suggestion: {e}", severity="error"
+            )
+
     # ── Browser / clipboard / editor ───────────────────────────────────────
 
     def action_open_in_browser(self) -> None:
@@ -459,8 +515,8 @@ class ReviewScreen(Screen):
 
     def action_jump_mode(self) -> None:
         """Activate jump mode: show letter hints for each panel."""
-        from prism.jump_overlay import JumpOverlay
-        from prism.jumper import Jumper
+        from prism.components.modals.jump_overlay import JumpOverlay
+        from prism.components.modals.jumper import Jumper
 
         targets = [
             ("file tree", self.query_one(FileTreePanel)),

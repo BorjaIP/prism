@@ -1,5 +1,3 @@
-"""Jump mode target manager — assigns single-key labels to focusable widgets."""
-
 from __future__ import annotations
 
 import string

@@ -78,7 +78,7 @@ class TestPostReply:
 
 class TestCommentList:
     def test_set_comments_populates_list(self) -> None:
-        from prism.widgets.comment_list import CommentList
+        from prism.components.panels.comment_list import CommentList
 
         widget = CommentList()
         comments = [_make_comment(id=1), _make_comment(id=2, line=10)]
@@ -87,7 +87,7 @@ class TestCommentList:
         assert len(widget._comments) == 2
 
     def test_comment_label_root(self) -> None:
-        from prism.widgets.comment_list import _comment_label
+        from prism.components.blocks.comment_item import comment_label as _comment_label
 
         comment = _make_comment(body="Short body", in_reply_to_id=None)
         label = _comment_label(comment)
@@ -97,14 +97,14 @@ class TestCommentList:
         assert label.startswith("@")
 
     def test_comment_label_reply_indented(self) -> None:
-        from prism.widgets.comment_list import _comment_label
+        from prism.components.blocks.comment_item import comment_label as _comment_label
 
         comment = _make_comment(body="Reply body", in_reply_to_id=1)
         label = _comment_label(comment)
         assert label.startswith("  ↳ ")
 
     def test_comment_label_truncates_long_body(self) -> None:
-        from prism.widgets.comment_list import _comment_label
+        from prism.components.blocks.comment_item import comment_label as _comment_label
 
         long_body = "x" * 100
         comment = _make_comment(body=long_body)
@@ -118,7 +118,7 @@ class TestReplyComposer:
     @pytest.mark.asyncio
     async def test_escape_dismisses_with_none(self) -> None:
         from textual.app import App, ComposeResult
-        from prism.widgets.reply_composer import ReplyComposer
+        from prism.components.modals.reply_composer import ReplyComposer
 
         result: list[str | None] = []
         comment = _make_comment()
@@ -139,7 +139,7 @@ class TestReplyComposer:
     async def test_ctrl_s_with_text_dismisses_with_body(self) -> None:
         from textual.app import App, ComposeResult
         from textual.widgets import TextArea
-        from prism.widgets.reply_composer import ReplyComposer
+        from prism.components.modals.reply_composer import ReplyComposer
 
         result: list[str | None] = []
         comment = _make_comment()
@@ -161,7 +161,7 @@ class TestReplyComposer:
     async def test_empty_submit_shows_error(self) -> None:
         from textual.app import App, ComposeResult
         from textual.widgets import Label
-        from prism.widgets.reply_composer import ReplyComposer
+        from prism.components.modals.reply_composer import ReplyComposer
 
         result: list[str | None] = []
         comment = _make_comment()

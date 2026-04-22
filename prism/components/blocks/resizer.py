@@ -1,5 +1,3 @@
-"""Draggable panel resizer — thin vertical bar between two panels."""
-
 from __future__ import annotations
 
 from textual import events

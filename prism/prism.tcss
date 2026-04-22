@@ -114,6 +114,23 @@ AIPanel {
     padding: 1 1;
 }
 
+#ai-empty {
+    content-align: center middle;
+    color: $text-muted;
+    text-style: italic;
+    width: 1fr;
+    height: 1fr;
+}
+
+#ai-loading {
+    color: $text-muted;
+    text-style: italic;
+}
+
+#ai-risk-badge {
+    margin: 1 0;
+}
+
 /* ── Comment Composer Modal ──────────────────── */
 
 CommentComposerScreen {

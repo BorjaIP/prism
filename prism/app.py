@@ -1,5 +1,3 @@
-"""PRism — main Textual application."""
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -34,6 +32,7 @@ class PRismApp(App):
         if config.keymap:
             self.set_keymap(config.keymap)
         from prism.themes import _BUILTIN
+
         for t in _BUILTIN.values():
             self.register_theme(t.to_textual_theme())
 
@@ -44,6 +43,7 @@ class PRismApp(App):
         self.theme = textual_theme.name
 
         from prism.screens.pr_list import PRListScreen
+
         self.push_screen(
             PRListScreen(
                 initial_repo=self._initial_repo,

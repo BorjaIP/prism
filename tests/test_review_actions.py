@@ -95,7 +95,7 @@ class TestRequestChangesModal:
     @pytest.mark.asyncio
     async def test_cancel_returns_none(self) -> None:
         from textual.app import App, ComposeResult
-        from prism.widgets.review_modal import RequestChangesModal
+        from prism.components.modals.review_modals import RequestChangesModal
 
         result: list[str | None] = []
 
@@ -118,7 +118,7 @@ class TestRequestChangesModal:
     async def test_submit_returns_body_text(self) -> None:
         from textual.app import App, ComposeResult
         from textual.widgets import TextArea
-        from prism.widgets.review_modal import RequestChangesModal
+        from prism.components.modals.review_modals import RequestChangesModal
 
         result: list[str | None] = []
 
@@ -141,7 +141,7 @@ class TestRequestChangesModal:
 
 class TestHeaderBarReviewState:
     def test_update_review_state_approved(self) -> None:
-        from prism.widgets.header_bar import HeaderBar
+        from prism.components.sections.header_bar import HeaderBar
 
         pr = _make_pr()
         bar = HeaderBar(pr)
@@ -151,7 +151,7 @@ class TestHeaderBarReviewState:
         assert "APPROVED" in str(line1)
 
     def test_update_review_state_changes_requested(self) -> None:
-        from prism.widgets.header_bar import HeaderBar
+        from prism.components.sections.header_bar import HeaderBar
 
         pr = _make_pr()
         bar = HeaderBar(pr)
@@ -160,7 +160,7 @@ class TestHeaderBarReviewState:
         assert "CHANGES REQUESTED" in str(line1)
 
     def test_no_review_badge_when_none(self) -> None:
-        from prism.widgets.header_bar import HeaderBar
+        from prism.components.sections.header_bar import HeaderBar
 
         pr = _make_pr()
         bar = HeaderBar(pr)

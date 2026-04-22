@@ -1,5 +1,3 @@
-"""Data models for Prism."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -35,6 +33,20 @@ class Comment:
     body: str
 
 
+class AIConcern(BaseModel):
+    model_config = ConfigDict(frozen=True)
+    title: str
+    description: str
+
+
+class AIAnalysis(BaseModel):
+    model_config = ConfigDict(frozen=True)
+    summary: str
+    risk: str  # "low" | "medium" | "high"
+    concerns: list[AIConcern] = []
+    suggested_comment: str = ""
+
+
 class PRFile(BaseModel):
     """A single file changed in a pull request."""
 
@@ -59,9 +71,15 @@ class PRMetadata(BaseModel):
     body: str = ""
     html_url: str = ""
     head_sha: str = ""  # PR head commit SHA, required for create_review_comment
-    review_state: str | None = None  # "APPROVED" | "CHANGES_REQUESTED" — set locally after submitting
-    review_comments: list["PRComment"] = []  # inline review comments pre-loaded at fetch time
-    checks_status: str | None = None  # "passing" | "failing" | "pending" from combined commit status
+    review_state: str | None = (
+        None  # "APPROVED" | "CHANGES_REQUESTED" — set locally after submitting
+    )
+    review_comments: list[
+        "PRComment"
+    ] = []  # inline review comments pre-loaded at fetch time
+    checks_status: str | None = (
+        None  # "passing" | "failing" | "pending" from combined commit status
+    )
 
 
 class PRComment(BaseModel):

@@ -1,5 +1,3 @@
-"""PR list screen — tabbed two-panel PR selector."""
-
 from __future__ import annotations
 
 import webbrowser
@@ -10,12 +8,18 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal
 from textual.screen import Screen
-from textual.widgets import ContentSwitcher, Footer, LoadingIndicator, TabbedContent, TabPane
+from textual.widgets import (
+    ContentSwitcher,
+    Footer,
+    LoadingIndicator,
+    TabbedContent,
+    TabPane,
+)
 
+from prism.components.modals.review_modals import QuitConfirmModal
+from prism.components.sections.pr_list_widget import PRListWidget
+from prism.components.sections.pr_preview_widget import PRPreviewWidget
 from prism.models import PRSummary
-from prism.widgets.pr_list_widget import PRListWidget
-from prism.widgets.pr_preview_widget import PRPreviewWidget
-from prism.widgets.review_modal import QuitConfirmModal
 
 _TAB_RECENT = "tab-recent"
 _TAB_REVIEW = "tab-review"
@@ -27,12 +31,36 @@ class PRListScreen(Screen):
     TITLE = "PRism"
 
     BINDINGS = [
-        Binding("enter", "open_selected", "Open", id="open-selected", tooltip="Open selected PR for review"),
+        Binding(
+            "enter",
+            "open_selected",
+            "Open",
+            id="open-selected",
+            tooltip="Open selected PR for review",
+        ),
         Binding("q", "request_quit", "Quit", id="quit", tooltip="Exit prism"),
-        Binding("n", "new_pr", "New PR", id="new-pr", tooltip="Open a PR by URL or repo+number"),
-        Binding("d", "delete_pr", "Remove from list", id="delete-pr", tooltip="Remove from Prism's local history (does not affect GitHub)"),
+        Binding(
+            "n",
+            "new_pr",
+            "New PR",
+            id="new-pr",
+            tooltip="Open a PR by URL or repo+number",
+        ),
+        Binding(
+            "d",
+            "delete_pr",
+            "Remove from list",
+            id="delete-pr",
+            tooltip="Remove from Prism's local history (does not affect GitHub)",
+        ),
         Binding("r", "refresh", "Refresh", id="refresh", tooltip="Refresh current tab"),
-        Binding("o", "open_in_browser", "Open in browser", id="open-browser", tooltip="Open selected PR in browser"),
+        Binding(
+            "o",
+            "open_in_browser",
+            "Open in browser",
+            id="open-browser",
+            tooltip="Open selected PR in browser",
+        ),
     ]
 
     def __init__(
@@ -73,17 +101,21 @@ class PRListScreen(Screen):
     def _load_history(self) -> None:
         """Load local Prism history — no network."""
         from prism.services.history import load_history
+
         try:
             summaries = load_history()
             self.app.call_from_thread(self._apply_history, summaries)
         except Exception as e:
             if not self._stopping:
-                self.app.call_from_thread(self.notify, f"Could not load history: {e}", severity="warning")
+                self.app.call_from_thread(
+                    self.notify, f"Could not load history: {e}", severity="warning"
+                )
 
     @work(thread=True, exclusive=True)
     def _fetch_review_requested(self) -> None:
         """Fetch PRs where the user is requested as reviewer from GitHub."""
         from prism.services.github import fetch_review_requested
+
         if self._stopping:
             return
         self.app.call_from_thread(self._set_review_title, "loading from GitHub…")
@@ -93,7 +125,9 @@ class PRListScreen(Screen):
                 self.app.call_from_thread(self._apply_review_requested, summaries)
         except Exception as e:
             if not self._stopping:
-                self.app.call_from_thread(self.notify, f"Failed to load reviews: {e}", severity="warning")
+                self.app.call_from_thread(
+                    self.notify, f"Failed to load reviews: {e}", severity="warning"
+                )
         finally:
             if not self._stopping:
                 self.app.call_from_thread(self._set_review_title, "")
@@ -102,6 +136,7 @@ class PRListScreen(Screen):
     def _open_pr_by_coords(self, repo_slug: str, pr_number: int) -> None:
         from prism.services.github import fetch_pr
         from prism.services.history import save_to_history
+
         if self._stopping:
             return
         self.app.call_from_thread(self.notify, f"Loading PR #{pr_number}…")
@@ -109,14 +144,19 @@ class PRListScreen(Screen):
             pr = fetch_pr(repo_slug, pr_number)
             save_to_history(pr, repo_slug)
             if not self._stopping:
+
                 def _push() -> None:
                     from prism.screens.review import ReviewScreen
+
                     self.app.push_screen(ReviewScreen(pr, repo_slug, pr_number))
+
                 self.app.call_from_thread(_push)
         except Exception as e:
             if not self._stopping:
                 self.app.call_from_thread(
-                    self.notify, f"Failed to load PR #{pr_number}: {e}", severity="error"
+                    self.notify,
+                    f"Failed to load PR #{pr_number}: {e}",
+                    severity="error",
                 )
 
     # ── Apply data (main thread) ──────────────────────────────────────────────
@@ -145,20 +185,26 @@ class PRListScreen(Screen):
     def _set_review_title(self, suffix: str) -> None:
         """Show/hide the loading indicator and update the border title."""
         if suffix:
-            self.query_one("#review-switcher", ContentSwitcher).current = "review-loading"
+            self.query_one(
+                "#review-switcher", ContentSwitcher
+            ).current = "review-loading"
         else:
             self.query_one("#review-switcher", ContentSwitcher).current = "review-pane"
 
     # ── Tab switching ─────────────────────────────────────────────────────────
 
-    def on_tabbed_content_tab_activated(self, event: TabbedContent.TabActivated) -> None:
+    def on_tabbed_content_tab_activated(
+        self, event: TabbedContent.TabActivated
+    ) -> None:
         if event.tab.id == _TAB_REVIEW and not self._review_loaded:
             self._review_loaded = True
             self._fetch_review_requested()
 
     # ── Message handlers (cursor movement only) ───────────────────────────────
 
-    def on_pr_list_widget_pr_highlighted(self, event: PRListWidget.PRHighlighted) -> None:
+    def on_pr_list_widget_pr_highlighted(
+        self, event: PRListWidget.PRHighlighted
+    ) -> None:
         if event.source_id == "recent-list":
             self._selected_recent = event.summary
             self.query_one("#recent-preview", PRPreviewWidget).update(event.summary)
@@ -172,7 +218,11 @@ class PRListScreen(Screen):
     # ── Actions ───────────────────────────────────────────────────────────────
 
     def action_open_selected(self) -> None:
-        selected = self._selected_recent if self._active_tab() == _TAB_RECENT else self._selected_review
+        selected = (
+            self._selected_recent
+            if self._active_tab() == _TAB_RECENT
+            else self._selected_review
+        )
         if selected is None:
             self.notify("No PR selected.", severity="warning")
             return
@@ -180,42 +230,55 @@ class PRListScreen(Screen):
 
     def action_delete_pr(self) -> None:
         if self._active_tab() != _TAB_RECENT:
-            self.notify("Remove is only available in Recently Reviewed.", severity="warning")
+            self.notify(
+                "Remove is only available in Recently Reviewed.", severity="warning"
+            )
             return
         if self._selected_recent is None:
             self.notify("No PR selected.", severity="warning")
             return
         from prism.services.history import delete_from_history
+
         s = self._selected_recent
         delete_from_history(s.repo_slug, s.number)
         widget = self.query_one("#recent-list", PRListWidget)
-        widget._summaries = [x for x in widget._summaries if not (x.repo_slug == s.repo_slug and x.number == s.number)]
+        widget._summaries = [
+            x
+            for x in widget._summaries
+            if not (x.repo_slug == s.repo_slug and x.number == s.number)
+        ]
         widget.load(widget._summaries)
         widget.border_title = f"Recently Reviewed ({len(widget._summaries)})"
         self._selected_recent = widget._summaries[0] if widget._summaries else None
         if self._selected_recent:
-            self.query_one("#recent-preview", PRPreviewWidget).update(self._selected_recent)
-        else:
-            self.query_one("#recent-preview", PRPreviewWidget).query_one("#pr-preview-content").update(
-                Text("Select a PR to preview", style="dim italic")
+            self.query_one("#recent-preview", PRPreviewWidget).update(
+                self._selected_recent
             )
+        else:
+            self.query_one("#recent-preview", PRPreviewWidget).query_one(
+                "#pr-preview-content"
+            ).update(Text("Select a PR to preview", style="dim italic"))
         self.notify("Removed from Prism's local list (not deleted on GitHub).")
 
     def action_request_quit(self) -> None:
         self._stopping = True
         self.app.push_screen(
             QuitConfirmModal(),
-            callback=lambda confirmed: self.app.exit() if confirmed else self._reset_stopping(),
+            callback=lambda confirmed: self.app.exit()
+            if confirmed
+            else self._reset_stopping(),
         )
 
     def _reset_stopping(self) -> None:
         self._stopping = False
 
     def action_new_pr(self) -> None:
-        from prism.screens.new_pr import NewPRScreen
+        from prism.components.modals.new_pr import NewPRScreen
+
         def _on_result(result: tuple[str, int] | None) -> None:
             if result is not None:
                 self._open_pr_by_coords(result[0], result[1])
+
         self.app.push_screen(NewPRScreen(), callback=_on_result)
 
     def action_refresh(self) -> None:
@@ -227,7 +290,11 @@ class PRListScreen(Screen):
             self._review_loaded = True
 
     def action_open_in_browser(self) -> None:
-        selected = self._selected_recent if self._active_tab() == _TAB_RECENT else self._selected_review
+        selected = (
+            self._selected_recent
+            if self._active_tab() == _TAB_RECENT
+            else self._selected_review
+        )
         if selected and selected.html_url:
             webbrowser.open(selected.html_url)
 

@@ -1,5 +1,3 @@
-"""GitHub API service for fetching PR data."""
-
 from __future__ import annotations
 
 import os
@@ -59,7 +57,9 @@ def fetch_my_prs(state: str = "open") -> list[PRSummary]:
 def fetch_review_requested() -> list[PRSummary]:
     """Fetch open PRs where the authenticated user is requested as reviewer (single search call)."""
     client = _get_client()
-    results = client.search_issues("is:pr is:open review-requested:@me sort:updated-desc")
+    results = client.search_issues(
+        "is:pr is:open review-requested:@me sort:updated-desc"
+    )
     return [s for issue in results if (s := _issue_to_summary(issue)) is not None]
 
 
@@ -278,6 +278,24 @@ def fetch_reviews(repo_slug: str, pr_number: int) -> list[PRReview]:
         )
         for r in pr.get_reviews()
     ]
+
+
+def post_pr_comment(repo_slug: str, pr_number: int, body: str) -> None:
+    """Post a PR-level (issue-level) comment.
+
+    Args:
+        repo_slug: Repository in 'owner/repo' format.
+        pr_number: Pull request number.
+        body: Comment text.
+
+    Raises:
+        GithubException: On GitHub API errors.
+        RuntimeError: If GITHUB_TOKEN is missing.
+    """
+    client = _get_client()
+    repo = client.get_repo(repo_slug)
+    pr = repo.get_pull(pr_number)
+    pr.create_issue_comment(body)
 
 
 def group_comments_by_file(

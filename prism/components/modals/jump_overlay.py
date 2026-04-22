@@ -1,5 +1,3 @@
-"""Jump mode overlay — letter hints for quick panel focus (ported from posting)."""
-
 from __future__ import annotations
 
 from textual.app import ComposeResult
@@ -8,7 +6,7 @@ from textual.screen import ModalScreen
 from textual.widget import Widget
 from textual.widgets import Static
 
-from prism.jumper import Jumper
+from prism.components.modals.jumper import Jumper
 
 
 class JumpOverlay(ModalScreen[Widget | None]):
@@ -35,7 +33,10 @@ class JumpOverlay(ModalScreen[Widget | None]):
 
     def compose(self) -> ComposeResult:
         assignments = self._jumper.assignments
-        parts = [f"[bold]{key}[/bold] {label}" for key, (label, _) in sorted(assignments.items())]
+        parts = [
+            f"[bold]{key}[/bold] {label}"
+            for key, (label, _) in sorted(assignments.items())
+        ]
         hint_text = "  ".join(parts) + "  [dim]esc to cancel[/dim]"
         yield Static(hint_text, id="jump-help", markup=True)
 

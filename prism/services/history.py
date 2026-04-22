@@ -1,5 +1,3 @@
-"""Local review history — tracks PRs opened in Prism."""
-
 from __future__ import annotations
 
 import json
@@ -39,7 +37,11 @@ def save_to_history(pr: PRMetadata, repo_slug: str) -> None:
     entries = _load_raw()
 
     # Remove any existing entry for the same PR so we can re-insert at top
-    entries = [e for e in entries if not (e.get("repo_slug") == repo_slug and e.get("number") == pr.number)]
+    entries = [
+        e
+        for e in entries
+        if not (e.get("repo_slug") == repo_slug and e.get("number") == pr.number)
+    ]
 
     entry = {
         "number": pr.number,
@@ -68,7 +70,8 @@ def delete_from_history(repo_slug: str, pr_number: int) -> None:
     """Remove a specific PR entry from the local history file."""
     entries = _load_raw()
     entries = [
-        e for e in entries
+        e
+        for e in entries
         if not (e.get("repo_slug") == repo_slug and e.get("number") == pr_number)
     ]
     HISTORY_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -93,7 +96,9 @@ def load_history() -> list[PRSummary]:
                     head_branch=e.get("head_branch", ""),
                     review_state=e.get("review_state"),
                     checks_status=e.get("checks_status"),
-                    updated_at=datetime.fromisoformat(e.get("opened_at", e.get("updated_at", _now_iso()))),
+                    updated_at=datetime.fromisoformat(
+                        e.get("opened_at", e.get("updated_at", _now_iso()))
+                    ),
                     html_url=e.get("html_url", ""),
                     body=e.get("body", ""),
                     comments=e.get("comments", 0),

@@ -1,16 +1,20 @@
-"""Command palette providers for Prism."""
-
 from __future__ import annotations
-
-from functools import partial
 
 from textual.command import Hit, Hits, Provider
 
 _COMMANDS: list[tuple[str, str, str]] = [
     ("approve", "Approve PR", "Submit an APPROVE review"),
     ("request_changes", "Request Changes", "Submit a REQUEST_CHANGES review"),
-    ("compose_comment", "Comment on file", "Write an inline comment on the selected line"),
-    ("toggle_comments_panel", "Toggle comments panel", "Show or hide the comments panel"),
+    (
+        "compose_comment",
+        "Comment on file",
+        "Write an inline comment on the selected line",
+    ),
+    (
+        "toggle_comments_panel",
+        "Toggle comments panel",
+        "Show or hide the comments panel",
+    ),
     ("refresh", "Refresh PR data", "Re-fetch PR data from GitHub"),
     ("open_in_browser", "Open in browser", "Open the PR in your default browser"),
     ("copy_url", "Copy PR URL", "Copy the PR URL to the clipboard"),
@@ -75,6 +79,11 @@ class ThemeProvider(Provider):
 
         async def apply(name: str = theme_name) -> None:
             self.app.theme = name
+            from prism.config import load_config, save_config
+
+            cfg = load_config()
+            cfg = cfg.model_copy(update={"theme": name})
+            save_config(cfg)
 
         return Hit(
             score=0.9,

@@ -1,5 +1,3 @@
-"""CLI entrypoint for Prism."""
-
 from __future__ import annotations
 
 import os
@@ -13,9 +11,7 @@ app = typer.Typer(
     help="Terminal UI for reviewing GitHub PRs.",
 )
 
-_GITHUB_PR_URL_RE = re.compile(
-    r"https?://github\.com/([^/]+/[^/]+)/pull/(\d+)"
-)
+_GITHUB_PR_URL_RE = re.compile(r"https?://github\.com/([^/]+/[^/]+)/pull/(\d+)")
 
 
 def _parse_github_url(url: str) -> tuple[str, int] | None:
@@ -49,7 +45,8 @@ def main(
         else:
             if pr_number is None:
                 typer.echo(
-                    "Error: pr_number is required when not passing a GitHub URL.", err=True
+                    "Error: pr_number is required when not passing a GitHub URL.",
+                    err=True,
                 )
                 raise typer.Exit(code=1)
             initial_repo = repo_or_url
