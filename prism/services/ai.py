@@ -7,7 +7,13 @@ from pathlib import Path
 import anthropic
 import diskcache
 
-from prism.constants import AI_CLI_TIMEOUT, AI_MAX_BODY_CHARS, AI_MAX_PATCH_CHARS, AI_MAX_TOKENS
+from prism.constants import (
+    AI_CLI_TIMEOUT,
+    AI_MAX_BODY_CHARS,
+    AI_MAX_PATCH_CHARS,
+    AI_MAX_TOKENS,
+    PRISM_CACHE_DIR,
+)
 from prism.models import AIAnalysis, AIConcern, PRFile, PRMetadata
 
 
@@ -34,7 +40,7 @@ Risk levels:
 """
 
     def __init__(self, cache_dir: Path | None = None) -> None:
-        self._cache = diskcache.Cache(cache_dir or Path.home() / ".cache" / "prism")
+        self._cache = diskcache.Cache(cache_dir or PRISM_CACHE_DIR)
 
     # ── Static helpers ────────────────────────────────────────────────────────
 

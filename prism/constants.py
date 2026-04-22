@@ -1,6 +1,22 @@
 from __future__ import annotations
 
+import os
 import re
+from pathlib import Path
+
+# ── XDG Base Directory paths ──────────────────────────────────────────────────
+# https://specifications.freedesktop.org/basedir/latest/
+# XDG_CONFIG_HOME defaults to ~/.config, XDG_CACHE_HOME defaults to ~/.cache.
+
+_xdg_config = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config")
+_xdg_cache = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache")
+
+PRISM_CONFIG_DIR: Path = _xdg_config / "prism"
+PRISM_CACHE_DIR: Path = _xdg_cache / "prism"
+
+CONFIG_FILE: Path = PRISM_CONFIG_DIR / "config.toml"
+HISTORY_FILE: Path = PRISM_CONFIG_DIR / "history.json"
+THEMES_DIR: Path = PRISM_CONFIG_DIR / "themes"
 
 # ── App ───────────────────────────────────────────────────────────────────────
 

@@ -4,17 +4,15 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
-from prism.constants import HISTORY_BODY_EXCERPT_LEN, HISTORY_MAX_ENTRIES
+from prism.constants import HISTORY_BODY_EXCERPT_LEN, HISTORY_FILE, HISTORY_MAX_ENTRIES
 from prism.models import PRMetadata, PRSummary
-
-_DEFAULT_PATH = Path.home() / ".config" / "prism" / "history.json"
 
 
 class HistoryService:
     """Local PR history: read/write recently reviewed PRs to disk."""
 
     def __init__(self, path: Path | None = None) -> None:
-        self._path = path or _DEFAULT_PATH
+        self._path = path or HISTORY_FILE
 
     # ── Private helpers ───────────────────────────────────────────────────────
 

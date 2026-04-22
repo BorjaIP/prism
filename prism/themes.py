@@ -6,7 +6,8 @@ from pathlib import Path
 from pydantic import BaseModel
 from textual.theme import Theme
 
-THEMES_DIR = Path.home() / ".config" / "prism" / "themes"
+from prism.constants import THEMES_DIR
+
 BASE16_SCRIPTS_DIR = Path.home() / ".config" / "base16-shell" / "scripts"
 
 

@@ -54,7 +54,7 @@ class TestLoadConfig:
     def test_returns_defaults_when_file_missing(self, tmp_path: Path) -> None:
         from prism import config as config_module
 
-        with patch.object(config_module, "CONFIG_PATH", tmp_path / "config.toml"):
+        with patch.object(config_module, "CONFIG_FILE", tmp_path / "config.toml"):
             from prism.config import load_config
 
             result = load_config()
@@ -68,7 +68,7 @@ class TestLoadConfig:
         config_file = tmp_path / "config.toml"
         config_file.write_text('theme = "nord"\nai_backend = "api"\n')
 
-        with patch.object(config_module, "CONFIG_PATH", config_file):
+        with patch.object(config_module, "CONFIG_FILE", config_file):
             from prism.config import load_config
 
             result = load_config()
@@ -82,7 +82,7 @@ class TestLoadConfig:
         config_file = tmp_path / "config.toml"
         config_file.write_text("show_ai_panel = false\n")
 
-        with patch.object(config_module, "CONFIG_PATH", config_file):
+        with patch.object(config_module, "CONFIG_FILE", config_file):
             from prism.config import load_config
 
             result = load_config()
@@ -95,7 +95,7 @@ class TestLoadConfig:
         config_file = tmp_path / "config.toml"
         config_file.write_text("refresh_interval_seconds = 30\n")
 
-        with patch.object(config_module, "CONFIG_PATH", config_file):
+        with patch.object(config_module, "CONFIG_FILE", config_file):
             from prism.config import load_config
 
             result = load_config()
@@ -109,7 +109,7 @@ class TestSaveConfig:
 
         config_path = tmp_path / "prism" / "config.toml"
 
-        with patch.object(config_module, "CONFIG_PATH", config_path):
+        with patch.object(config_module, "CONFIG_FILE", config_path):
             from prism.config import save_config
 
             save_config(PrismConfig(theme="dracula"))
@@ -122,7 +122,7 @@ class TestSaveConfig:
 
         config_path = tmp_path / "deep" / "nested" / "config.toml"
 
-        with patch.object(config_module, "CONFIG_PATH", config_path):
+        with patch.object(config_module, "CONFIG_FILE", config_path):
             from prism.config import save_config
 
             save_config(PrismConfig())
@@ -134,7 +134,7 @@ class TestSaveConfig:
 
         config_path = tmp_path / "config.toml"
 
-        with patch.object(config_module, "CONFIG_PATH", config_path):
+        with patch.object(config_module, "CONFIG_FILE", config_path):
             from prism.config import save_config
 
             save_config(PrismConfig(show_ai_panel=False))
@@ -147,7 +147,7 @@ class TestSaveConfig:
 
         config_path = tmp_path / "config.toml"
 
-        with patch.object(config_module, "CONFIG_PATH", config_path):
+        with patch.object(config_module, "CONFIG_FILE", config_path):
             from prism.config import save_config
 
             save_config(PrismConfig(refresh_interval_seconds=60))
@@ -160,7 +160,7 @@ class TestSaveConfig:
 
         config_path = tmp_path / "config.toml"
 
-        with patch.object(config_module, "CONFIG_PATH", config_path):
+        with patch.object(config_module, "CONFIG_FILE", config_path):
             from prism.config import save_config
 
             save_config(PrismConfig(keymap={"refresh": "ctrl+r"}))
@@ -175,7 +175,7 @@ class TestSaveConfig:
         config_path = tmp_path / "config.toml"
         original = PrismConfig(theme="gruvbox", refresh_interval_seconds=15)
 
-        with patch.object(config_module, "CONFIG_PATH", config_path):
+        with patch.object(config_module, "CONFIG_FILE", config_path):
             from prism.config import load_config, save_config
 
             save_config(original)
@@ -189,7 +189,7 @@ class TestSaveConfig:
 
         config_path = tmp_path / "config.toml"
 
-        with patch.object(config_module, "CONFIG_PATH", config_path):
+        with patch.object(config_module, "CONFIG_FILE", config_path):
             from prism.config import save_config
 
             # backslash in path should be escaped

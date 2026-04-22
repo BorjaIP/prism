@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import os
 import tomllib
-from pathlib import Path
 
 from pydantic import BaseModel
 
-CONFIG_PATH = Path.home() / ".config" / "prism" / "config.toml"
+from prism.constants import CONFIG_FILE
 
 
 class PrismConfig(BaseModel):
@@ -35,8 +34,8 @@ class PrismConfig(BaseModel):
 
 def load_config() -> PrismConfig:
     """Load config from ~/.config/prism/config.toml if it exists."""
-    if CONFIG_PATH.exists():
-        with open(CONFIG_PATH, "rb") as f:
+    if CONFIG_FILE.exists():
+        with open(CONFIG_FILE, "rb") as f:
             data = tomllib.load(f)
         return PrismConfig(**data)
     return PrismConfig()
@@ -44,7 +43,7 @@ def load_config() -> PrismConfig:
 
 def save_config(config: PrismConfig) -> None:
     """Persist config to ~/.config/prism/config.toml."""
-    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
     lines: list[str] = []
     for field, value in config.model_dump().items():
         if isinstance(value, dict):
@@ -61,4 +60,4 @@ def save_config(config: PrismConfig) -> None:
         for k, v in config.keymap.items():
             escaped_v = v.replace("\\", "\\\\").replace('"', '\\"')
             lines.append(f'{k} = "{escaped_v}"')
-    CONFIG_PATH.write_text("\n".join(lines) + "\n")
+    CONFIG_FILE.write_text("\n".join(lines) + "\n")
