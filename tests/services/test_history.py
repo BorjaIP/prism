@@ -146,18 +146,19 @@ class TestSaveToHistory:
         assert len(data[0]["body"]) == 500
 
     def test_keeps_max_50_entries(self, tmp_path: Path) -> None:
+        from prism.constants import HISTORY_MAX_ENTRIES
         from prism.services import history as hist_module
-        from prism.services.history import _MAX_ENTRIES, save_to_history
+        from prism.services.history import save_to_history
 
         path = tmp_path / "history.json"
-        existing = [{"number": i, "repo_slug": "o/r"} for i in range(_MAX_ENTRIES)]
+        existing = [{"number": i, "repo_slug": "o/r"} for i in range(HISTORY_MAX_ENTRIES)]
         path.write_text(json.dumps(existing))
 
         with patch.object(hist_module, "HISTORY_PATH", path):
             save_to_history(_make_pr(number=999), "o/r")
 
         data = json.loads(path.read_text())
-        assert len(data) == _MAX_ENTRIES
+        assert len(data) == HISTORY_MAX_ENTRIES
         assert data[0]["number"] == 999
 
 

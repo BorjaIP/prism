@@ -42,7 +42,7 @@ class PRismApp(App):
             self.register_theme(textual_theme)
         self.theme = textual_theme.name
 
-        from prism.screens.pr_list import PRListScreen
+        from prism.screens.main import PRListScreen
 
         self.push_screen(
             PRListScreen(
