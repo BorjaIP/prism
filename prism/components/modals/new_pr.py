@@ -3,12 +3,13 @@ from __future__ import annotations
 import re
 
 from textual.app import ComposeResult
-
-from prism.constants import GITHUB_PR_URL_RE
 from textual.binding import Binding
 from textual.containers import Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Button, Input, Label
+
+from prism.constants import GITHUB_PR_URL_RE
+
 
 def _parse(value: str) -> tuple[str, int] | None:
     """Parse a GitHub PR URL or 'owner/repo number' string."""

@@ -72,14 +72,14 @@ class AIPanel(Widget):
 
     @work(thread=True, exclusive=True)
     def _run_analysis(self, force_refresh: bool = False) -> None:
-        from prism.services.ai import analyze_file
+        from prism.services.ai import AIService
 
         current = self._current_file
         if current is None:
             return
         self.app.call_from_thread(self._set_loading, True)
         try:
-            result = analyze_file(
+            result = AIService().analyze_file(
                 self._pr,
                 current,
                 self._repo_slug,

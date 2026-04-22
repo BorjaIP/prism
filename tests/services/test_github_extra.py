@@ -7,29 +7,39 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from prism.models import PRMetadata, PRSummary
+from prism.services.github import GithubService
 
 
-class TestGetClient:
+class TestGithubServiceInit:
     def test_raises_when_token_missing(self) -> None:
-        from prism.services.github import _get_client
-
         env = {k: v for k, v in os.environ.items() if k != "GITHUB_TOKEN"}
         with patch.dict(os.environ, env, clear=True):
             with pytest.raises(RuntimeError, match="GITHUB_TOKEN"):
-                _get_client()
+                GithubService()
 
-    def test_returns_github_instance_when_token_set(self) -> None:
-        from github import Github
-
-        from prism.services.github import _get_client
-
-        with patch.dict(os.environ, {"GITHUB_TOKEN": "ghp_test"}):
-            with patch("prism.services.github.Github") as mock_cls:
-                mock_cls.return_value = MagicMock(spec=Github)
-                client = _get_client()
-
+    def test_accepts_explicit_token(self) -> None:
+        with patch("prism.services.github.Github") as mock_cls:
+            svc = GithubService(token="ghp_test")
         mock_cls.assert_called_once_with("ghp_test")
-        assert client is not None
+        assert svc is not None
+
+    def test_reads_token_from_env(self) -> None:
+        with patch.dict(os.environ, {"GITHUB_TOKEN": "ghp_env"}):
+            with patch("prism.services.github.Github") as mock_cls:
+                svc = GithubService()
+        mock_cls.assert_called_once_with("ghp_env")
+        assert svc is not None
+
+
+def _make_service(mock_repo=None) -> tuple[GithubService, MagicMock]:
+    """Build a GithubService with a mocked underlying Github client."""
+    with patch("prism.services.github.Github"):
+        svc = GithubService(token="test")
+    mock_client = MagicMock()
+    if mock_repo is not None:
+        mock_client.get_repo.return_value = mock_repo
+    svc._client = mock_client
+    return svc, mock_client
 
 
 class TestIssueToSummary:
@@ -50,69 +60,50 @@ class TestIssueToSummary:
         return issue
 
     def test_maps_open_pr(self) -> None:
-        from prism.services.github import _issue_to_summary
-
-        result = _issue_to_summary(self._make_issue())
+        result = GithubService._issue_to_summary(self._make_issue())
         assert isinstance(result, PRSummary)
         assert result.number == 1
         assert result.state == "open"
 
     def test_maps_merged_pr(self) -> None:
-        from prism.services.github import _issue_to_summary
-
         merged_at = datetime(2024, 5, 1, tzinfo=UTC)
-        result = _issue_to_summary(self._make_issue(merged_at=merged_at))
+        result = GithubService._issue_to_summary(self._make_issue(merged_at=merged_at))
         assert result is not None
         assert result.state == "merged"
 
     def test_returns_none_on_exception(self) -> None:
-        from prism.services.github import _issue_to_summary
-
         broken = MagicMock()
         broken.number = None
-        broken.repository.full_name = None  # will raise in PRSummary
-        # Force an attribute error
+        broken.repository.full_name = None
         del broken.user
-
-        result = _issue_to_summary(broken)
+        result = GithubService._issue_to_summary(broken)
         assert result is None
 
     def test_review_state_is_none(self) -> None:
-        from prism.services.github import _issue_to_summary
-
-        result = _issue_to_summary(self._make_issue())
+        result = GithubService._issue_to_summary(self._make_issue())
         assert result is not None
         assert result.review_state is None
 
     def test_checks_status_is_none(self) -> None:
-        from prism.services.github import _issue_to_summary
-
-        result = _issue_to_summary(self._make_issue())
+        result = GithubService._issue_to_summary(self._make_issue())
         assert result is not None
         assert result.checks_status is None
 
     def test_maps_body(self) -> None:
-        from prism.services.github import _issue_to_summary
-
-        result = _issue_to_summary(self._make_issue(body="PR description"))
+        result = GithubService._issue_to_summary(self._make_issue(body="PR description"))
         assert result is not None
         assert result.body == "PR description"
 
     def test_empty_body_becomes_empty_string(self) -> None:
-        from prism.services.github import _issue_to_summary
-
         issue = self._make_issue()
         issue.body = None
-        result = _issue_to_summary(issue)
+        result = GithubService._issue_to_summary(issue)
         assert result is not None
         assert result.body == ""
 
 
 class TestFetchPr:
-    @patch("prism.services.github._get_client")
-    def test_returns_pr_metadata(self, mock_get_client: MagicMock) -> None:
-        from prism.services.github import fetch_pr
-
+    def test_returns_pr_metadata(self) -> None:
         mock_pr = MagicMock()
         mock_pr.number = 42
         mock_pr.title = "Add feature"
@@ -136,9 +127,9 @@ class TestFetchPr:
         mock_repo = MagicMock()
         mock_repo.get_pull.return_value = mock_pr
         mock_repo.get_commit.return_value = mock_commit
-        mock_get_client.return_value.get_repo.return_value = mock_repo
 
-        result = fetch_pr("o/r", 42)
+        svc, _ = _make_service(mock_repo)
+        result = svc.fetch_pr("o/r", 42)
 
         assert isinstance(result, PRMetadata)
         assert result.number == 42
@@ -146,10 +137,7 @@ class TestFetchPr:
         assert result.state == "open"
         assert result.checks_status == "success"
 
-    @patch("prism.services.github._get_client")
-    def test_state_is_merged_when_pr_merged(self, mock_get_client: MagicMock) -> None:
-        from prism.services.github import fetch_pr
-
+    def test_state_is_merged_when_pr_merged(self) -> None:
         mock_pr = MagicMock()
         mock_pr.number = 1
         mock_pr.title = "Merged"
@@ -167,16 +155,12 @@ class TestFetchPr:
         mock_repo = MagicMock()
         mock_repo.get_pull.return_value = mock_pr
         mock_repo.get_commit.side_effect = Exception("no commit")
-        mock_get_client.return_value.get_repo.return_value = mock_repo
 
-        result = fetch_pr("o/r", 1)
-
+        svc, _ = _make_service(mock_repo)
+        result = svc.fetch_pr("o/r", 1)
         assert result.state == "merged"
 
-    @patch("prism.services.github._get_client")
-    def test_checks_status_none_on_exception(self, mock_get_client: MagicMock) -> None:
-        from prism.services.github import fetch_pr
-
+    def test_checks_status_none_on_exception(self) -> None:
         mock_pr = MagicMock()
         mock_pr.number = 1
         mock_pr.title = "T"
@@ -194,18 +178,14 @@ class TestFetchPr:
         mock_repo = MagicMock()
         mock_repo.get_pull.return_value = mock_pr
         mock_repo.get_commit.side_effect = Exception("network error")
-        mock_get_client.return_value.get_repo.return_value = mock_repo
 
-        result = fetch_pr("o/r", 1)
-
+        svc, _ = _make_service(mock_repo)
+        result = svc.fetch_pr("o/r", 1)
         assert result.checks_status is None
 
 
 class TestFetchMyPrs:
-    @patch("prism.services.github._get_client")
-    def test_returns_list_of_pr_summaries(self, mock_get_client: MagicMock) -> None:
-        from prism.services.github import fetch_my_prs
-
+    def test_returns_list_of_pr_summaries(self) -> None:
         mock_issue = MagicMock()
         mock_issue.number = 5
         mock_issue.title = "My PR"
@@ -220,51 +200,43 @@ class TestFetchMyPrs:
         pr_part.merged_at = None
         mock_issue.pull_request = pr_part
 
-        mock_get_client.return_value.search_issues.return_value = [mock_issue]
+        svc, mock_client = _make_service()
+        mock_client.search_issues.return_value = [mock_issue]
 
-        result = fetch_my_prs()
-
+        result = svc.fetch_my_prs()
         assert len(result) == 1
         assert result[0].number == 5
 
-    @patch("prism.services.github._get_client")
-    def test_skips_issues_that_fail_mapping(self, mock_get_client: MagicMock) -> None:
-        from prism.services.github import fetch_my_prs
-
+    def test_skips_issues_that_fail_mapping(self) -> None:
         broken_issue = MagicMock()
-        del broken_issue.user  # will cause AttributeError in _issue_to_summary
+        del broken_issue.user
 
-        mock_get_client.return_value.search_issues.return_value = [broken_issue]
+        svc, mock_client = _make_service()
+        mock_client.search_issues.return_value = [broken_issue]
 
-        result = fetch_my_prs()
+        result = svc.fetch_my_prs()
         assert result == []
 
 
 class TestPostPrComment:
-    @patch("prism.services.github._get_client")
-    def test_calls_create_issue_comment(self, mock_get_client: MagicMock) -> None:
-        from prism.services.github import post_pr_comment
-
+    def test_calls_create_issue_comment(self) -> None:
         mock_pr = MagicMock()
         mock_repo = MagicMock()
         mock_repo.get_pull.return_value = mock_pr
-        mock_get_client.return_value.get_repo.return_value = mock_repo
 
-        post_pr_comment("o/r", 1, "Great work!")
+        svc, _ = _make_service(mock_repo)
+        svc.post_pr_comment("o/r", 1, "Great work!")
 
         mock_pr.create_issue_comment.assert_called_once_with("Great work!")
 
-    @patch("prism.services.github._get_client")
-    def test_raises_github_exception_on_error(self, mock_get_client: MagicMock) -> None:
+    def test_raises_github_exception_on_error(self) -> None:
         from github import GithubException
-
-        from prism.services.github import post_pr_comment
 
         mock_pr = MagicMock()
         mock_pr.create_issue_comment.side_effect = GithubException(403, {"message": "Forbidden"})
         mock_repo = MagicMock()
         mock_repo.get_pull.return_value = mock_pr
-        mock_get_client.return_value.get_repo.return_value = mock_repo
 
+        svc, _ = _make_service(mock_repo)
         with pytest.raises(GithubException):
-            post_pr_comment("o/r", 1, "body")
+            svc.post_pr_comment("o/r", 1, "body")

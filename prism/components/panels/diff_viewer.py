@@ -8,7 +8,7 @@ from textual.widgets import RichLog, Static
 
 from prism.components.panels.comment_list import CommentList
 from prism.models import PRComment, PRFile
-from prism.services.diff import render_diff
+from prism.services.diff import DiffService
 
 
 class DiffViewer(Widget):
@@ -86,6 +86,6 @@ class DiffViewer(Widget):
         self.app.call_from_thread(log.clear)
 
         width = self.size.width - 2
-        text = render_diff(pr_file.patch or "", width=max(width, 40))
+        text = DiffService.render(pr_file.patch or "", width=max(width, 40))
 
         self.app.call_from_thread(log.write, text)

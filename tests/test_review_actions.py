@@ -5,6 +5,17 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from prism.models import PRMetadata
+from prism.services.github import GithubService
+
+
+def _make_service(mock_repo=None) -> tuple[GithubService, MagicMock]:
+    with patch("prism.services.github.Github"):
+        svc = GithubService(token="test")
+    mock_client = MagicMock()
+    if mock_repo is not None:
+        mock_client.get_repo.return_value = mock_repo
+    svc._client = mock_client
+    return svc, mock_client
 
 
 def _make_pr(**kwargs) -> PRMetadata:
@@ -22,39 +33,30 @@ def _make_pr(**kwargs) -> PRMetadata:
 
 
 class TestSubmitReview:
-    @patch("prism.services.github._get_client")
-    def test_submit_approve_calls_create_review(self, mock_get_client: MagicMock) -> None:
-        from prism.services.github import submit_review
-
+    def test_submit_approve_calls_create_review(self) -> None:
         mock_pr = MagicMock()
         mock_repo = MagicMock()
         mock_repo.get_pull.return_value = mock_pr
-        mock_get_client.return_value.get_repo.return_value = mock_repo
 
-        submit_review("example/repo", 1, event="APPROVE")
+        svc, _ = _make_service(mock_repo)
+        svc.submit_review("example/repo", 1, event="APPROVE")
 
         mock_pr.create_review.assert_called_once_with(body="", event="APPROVE")
 
-    @patch("prism.services.github._get_client")
-    def test_submit_request_changes_passes_body(self, mock_get_client: MagicMock) -> None:
-        from prism.services.github import submit_review
-
+    def test_submit_request_changes_passes_body(self) -> None:
         mock_pr = MagicMock()
         mock_repo = MagicMock()
         mock_repo.get_pull.return_value = mock_pr
-        mock_get_client.return_value.get_repo.return_value = mock_repo
 
-        submit_review("example/repo", 1, event="REQUEST_CHANGES", body="Please fix this")
+        svc, _ = _make_service(mock_repo)
+        svc.submit_review("example/repo", 1, event="REQUEST_CHANGES", body="Please fix this")
 
         mock_pr.create_review.assert_called_once_with(
             body="Please fix this", event="REQUEST_CHANGES"
         )
 
-    @patch("prism.services.github._get_client")
-    def test_submit_review_raises_github_exception(self, mock_get_client: MagicMock) -> None:
+    def test_submit_review_raises_github_exception(self) -> None:
         from github import GithubException
-
-        from prism.services.github import submit_review
 
         mock_pr = MagicMock()
         mock_pr.create_review.side_effect = GithubException(
@@ -62,10 +64,10 @@ class TestSubmitReview:
         )
         mock_repo = MagicMock()
         mock_repo.get_pull.return_value = mock_pr
-        mock_get_client.return_value.get_repo.return_value = mock_repo
 
+        svc, _ = _make_service(mock_repo)
         with pytest.raises(GithubException):
-            submit_review("example/repo", 1, event="APPROVE")
+            svc.submit_review("example/repo", 1, event="APPROVE")
 
 
 class TestPRMetadataReviewState:

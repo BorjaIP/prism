@@ -7,7 +7,7 @@ from textual.widget import Widget
 from textual.widgets import LoadingIndicator, Markdown, Static, TabbedContent, TabPane
 
 from prism.models import PRComment, PRReview
-from prism.services.github import fetch_comments, fetch_reviews, group_comments_by_file
+from prism.services.github import GithubService
 
 
 def _format_comment(comment: PRComment, indent: bool = False) -> str:
@@ -102,8 +102,9 @@ class CommentsPanel(Widget):
     def _fetch_data(self) -> None:
         """Fetch comments and reviews in a background thread."""
         try:
-            comments = fetch_comments(self._repo_slug, self._pr_number)
-            reviews = fetch_reviews(self._repo_slug, self._pr_number)
+            svc = GithubService()
+            comments = svc.fetch_comments(self._repo_slug, self._pr_number)
+            reviews = svc.fetch_reviews(self._repo_slug, self._pr_number)
             self.app.call_from_thread(self._on_data_loaded, comments, reviews)
         except Exception as e:
             self.app.call_from_thread(
@@ -127,7 +128,7 @@ class CommentsPanel(Widget):
         if self._all_comments is not None:
             self._refresh_inline(path)
             # Auto-switch to File tab if there are inline comments for this file
-            by_file = group_comments_by_file(self._all_comments)
+            by_file = GithubService.group_comments_by_file(self._all_comments)
             if by_file.get(path):
                 try:
                     self.query_one("#comments-tabs", TabbedContent).active = "tab-file"
@@ -165,7 +166,7 @@ class CommentsPanel(Widget):
             empty.display = True
             return
 
-        by_file = group_comments_by_file(self._all_comments)
+        by_file = GithubService.group_comments_by_file(self._all_comments)
         file_comments = by_file.get(path, [])
 
         if file_comments:

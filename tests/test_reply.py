@@ -6,6 +6,17 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from prism.models import PRComment
+from prism.services.github import GithubService
+
+
+def _make_service(mock_repo=None) -> tuple[GithubService, MagicMock]:
+    with patch("prism.services.github.Github"):
+        svc = GithubService(token="test")
+    mock_client = MagicMock()
+    if mock_repo is not None:
+        mock_client.get_repo.return_value = mock_repo
+    svc._client = mock_client
+    return svc, mock_client
 
 
 def _make_comment(**kwargs) -> PRComment:
@@ -24,10 +35,7 @@ def _make_comment(**kwargs) -> PRComment:
 
 
 class TestPostReply:
-    @patch("prism.services.github._get_client")
-    def test_post_reply_calls_create_review_comment_reply(self, mock_get_client: MagicMock) -> None:
-        from prism.services.github import post_reply
-
+    def test_post_reply_calls_create_review_comment_reply(self) -> None:
         mock_reply = MagicMock()
         mock_reply.id = 999
         mock_reply.body = "Fixed!"
@@ -43,9 +51,9 @@ class TestPostReply:
         mock_pr.create_review_comment_reply.return_value = mock_reply
         mock_repo = MagicMock()
         mock_repo.get_pull.return_value = mock_pr
-        mock_get_client.return_value.get_repo.return_value = mock_repo
 
-        result = post_reply("example/repo", 1, comment_id=1, body="Fixed!")
+        svc, _ = _make_service(mock_repo)
+        result = svc.post_reply("example/repo", 1, comment_id=1, body="Fixed!")
 
         mock_pr.create_review_comment_reply.assert_called_once_with(1, "Fixed!")
         assert result.id == 999
@@ -53,11 +61,8 @@ class TestPostReply:
         assert result.author == "author"
         assert result.in_reply_to_id == 1
 
-    @patch("prism.services.github._get_client")
-    def test_post_reply_raises_github_exception(self, mock_get_client: MagicMock) -> None:
+    def test_post_reply_raises_github_exception(self) -> None:
         from github import GithubException
-
-        from prism.services.github import post_reply
 
         mock_pr = MagicMock()
         mock_pr.create_review_comment_reply.side_effect = GithubException(
@@ -65,10 +70,10 @@ class TestPostReply:
         )
         mock_repo = MagicMock()
         mock_repo.get_pull.return_value = mock_pr
-        mock_get_client.return_value.get_repo.return_value = mock_repo
 
+        svc, _ = _make_service(mock_repo)
         with pytest.raises(GithubException):
-            post_reply("example/repo", 1, comment_id=999, body="Reply")
+            svc.post_reply("example/repo", 1, comment_id=999, body="Reply")
 
 
 class TestCommentList:

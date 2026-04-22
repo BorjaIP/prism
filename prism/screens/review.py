@@ -29,6 +29,8 @@ from prism.constants import (
     COMMENTS_NORMAL_WIDTH,
     DIFF_EXPANDED_WIDTH,
     DIFF_NORMAL_WIDTH,
+)
+from prism.constants import (
     PANEL_CYCLE as _PANEL_CYCLE,
 )
 from prism.models import Comment, PRComment, PRMetadata
@@ -216,10 +218,10 @@ class ReviewScreen(Screen):
         """Background worker: fetch fresh PR data and update widgets."""
         from github import GithubException
 
-        from prism.services.github import fetch_pr
+        from prism.services.github import GithubService
 
         try:
-            pr = fetch_pr(self._repo_slug, self._pr_number)
+            pr = GithubService().fetch_pr(self._repo_slug, self._pr_number)
             self.app.call_from_thread(self._apply_refresh, pr)
         except GithubException as e:
             msg = e.data.get("message", str(e)) if isinstance(e.data, dict) else str(e)
@@ -271,10 +273,10 @@ class ReviewScreen(Screen):
     def _post_comment(self, body: str, path: str, line: int) -> None:
         from github import GithubException
 
-        from prism.services.github import post_comment
+        from prism.services.github import GithubService
 
         try:
-            comment = post_comment(
+            comment = GithubService().post_comment(
                 repo_slug=self._repo_slug,
                 pr_number=self._pr_number,
                 commit_id=self._pr.head_sha,
@@ -312,10 +314,10 @@ class ReviewScreen(Screen):
     def _do_approve(self) -> None:
         from github import GithubException
 
-        from prism.services.github import submit_review
+        from prism.services.github import GithubService
 
         try:
-            submit_review(self._repo_slug, self._pr_number, event="APPROVE")
+            GithubService().submit_review(self._repo_slug, self._pr_number, event="APPROVE")
             self._pr = self._pr.model_copy(update={"review_state": "APPROVED"})
             self.app.call_from_thread(self._update_header)
             self.app.call_from_thread(self.notify, "PR approved", severity="information")
@@ -342,10 +344,10 @@ class ReviewScreen(Screen):
     def _do_request_changes(self, body: str) -> None:
         from github import GithubException
 
-        from prism.services.github import submit_review
+        from prism.services.github import GithubService
 
         try:
-            submit_review(
+            GithubService().submit_review(
                 self._repo_slug,
                 self._pr_number,
                 event="REQUEST_CHANGES",
@@ -394,10 +396,10 @@ class ReviewScreen(Screen):
     def _do_post_reply(self, parent_comment: PRComment, body: str) -> None:
         from github import GithubException
 
-        from prism.services.github import post_reply
+        from prism.services.github import GithubService
 
         try:
-            reply = post_reply(
+            reply = GithubService().post_reply(
                 repo_slug=self._repo_slug,
                 pr_number=self._pr_number,
                 comment_id=parent_comment.id,
@@ -453,10 +455,10 @@ class ReviewScreen(Screen):
     def _do_post_suggestion(self, body: str) -> None:
         from github import GithubException
 
-        from prism.services.github import post_pr_comment
+        from prism.services.github import GithubService
 
         try:
-            post_pr_comment(self._repo_slug, self._pr_number, body)
+            GithubService().post_pr_comment(self._repo_slug, self._pr_number, body)
             self.app.call_from_thread(
                 self.notify,
                 "AI suggestion posted as PR comment.",

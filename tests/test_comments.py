@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 from prism.models import PRComment
-from prism.services.github import group_comments_by_file
+from prism.services.github import GithubService
 
 
 def _make_comment(
@@ -27,6 +27,16 @@ def _make_comment(
     )
 
 
+def _make_service(mock_repo=None) -> tuple[GithubService, MagicMock]:
+    with patch("prism.services.github.Github"):
+        svc = GithubService(token="test")
+    mock_client = MagicMock()
+    if mock_repo is not None:
+        mock_client.get_repo.return_value = mock_repo
+    svc._client = mock_client
+    return svc, mock_client
+
+
 class TestGroupCommentsByFile:
     def test_groups_by_path(self) -> None:
         comments = [
@@ -34,7 +44,7 @@ class TestGroupCommentsByFile:
             _make_comment(2, "src/b.py", 20),
             _make_comment(3, "src/a.py", 15),
         ]
-        result = group_comments_by_file(comments)
+        result = GithubService.group_comments_by_file(comments)
         assert set(result.keys()) == {"src/a.py", "src/b.py"}
         assert len(result["src/a.py"]) == 2
         assert len(result["src/b.py"]) == 1
@@ -45,7 +55,7 @@ class TestGroupCommentsByFile:
             _make_comment(2, "src/a.py", 10),
             _make_comment(3, "src/a.py", 20),
         ]
-        result = group_comments_by_file(comments)
+        result = GithubService.group_comments_by_file(comments)
         lines = [c.line for c in result["src/a.py"]]
         assert lines == [10, 20, 30]
 
@@ -66,7 +76,7 @@ class TestGroupCommentsByFile:
             created_at=datetime(2024, 1, 1, 2, tzinfo=UTC),
         )
         comments = [reply2, reply1, root]  # scrambled order
-        result = group_comments_by_file(comments)
+        result = GithubService.group_comments_by_file(comments)
         ids = [c.id for c in result["src/a.py"]]
         assert ids == [1, 2, 3]  # root, then replies by created_at
 
@@ -79,18 +89,15 @@ class TestGroupCommentsByFile:
             created_at=datetime(2024, 1, 1, tzinfo=UTC),
             path=None,
         )
-        result = group_comments_by_file([comment_with_path, comment_no_path])
+        result = GithubService.group_comments_by_file([comment_with_path, comment_no_path])
         assert list(result.keys()) == ["src/a.py"]
 
     def test_empty_input(self) -> None:
-        assert group_comments_by_file([]) == {}
+        assert GithubService.group_comments_by_file([]) == {}
 
 
 class TestFetchComments:
-    @patch("prism.services.github._get_client")
-    def test_maps_pygithub_comment_to_pr_comment(self, mock_get_client: MagicMock) -> None:
-        from prism.services.github import fetch_comments
-
+    def test_maps_pygithub_comment_to_pr_comment(self) -> None:
         mock_comment = MagicMock()
         mock_comment.id = 42
         mock_comment.body = "This needs fixing"
@@ -107,9 +114,9 @@ class TestFetchComments:
         mock_pr.get_comments.return_value = [mock_comment]
         mock_repo = MagicMock()
         mock_repo.get_pull.return_value = mock_pr
-        mock_get_client.return_value.get_repo.return_value = mock_repo
 
-        result = fetch_comments("example/repo", 1)
+        svc, _ = _make_service(mock_repo)
+        result = svc.fetch_comments("example/repo", 1)
 
         assert len(result) == 1
         comment = result[0]
@@ -122,10 +129,7 @@ class TestFetchComments:
 
 
 class TestFetchReviews:
-    @patch("prism.services.github._get_client")
-    def test_maps_pygithub_review_to_pr_review(self, mock_get_client: MagicMock) -> None:
-        from prism.services.github import fetch_reviews
-
+    def test_maps_pygithub_review_to_pr_review(self) -> None:
         mock_review = MagicMock()
         mock_review.id = 99
         mock_review.body = "Looks good overall"
@@ -138,9 +142,9 @@ class TestFetchReviews:
         mock_pr.get_reviews.return_value = [mock_review]
         mock_repo = MagicMock()
         mock_repo.get_pull.return_value = mock_pr
-        mock_get_client.return_value.get_repo.return_value = mock_repo
 
-        result = fetch_reviews("example/repo", 1)
+        svc, _ = _make_service(mock_repo)
+        result = svc.fetch_reviews("example/repo", 1)
 
         assert len(result) == 1
         review = result[0]

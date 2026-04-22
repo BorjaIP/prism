@@ -5,12 +5,21 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from prism.services.github import GithubService
+
+
+def _make_service(mock_repo=None) -> tuple[GithubService, MagicMock]:
+    with patch("prism.services.github.Github"):
+        svc = GithubService(token="test")
+    mock_client = MagicMock()
+    if mock_repo is not None:
+        mock_client.get_repo.return_value = mock_repo
+    svc._client = mock_client
+    return svc, mock_client
+
 
 class TestPostComment:
-    @patch("prism.services.github._get_client")
-    def test_posts_comment_and_returns_pr_comment(self, mock_get_client: MagicMock) -> None:
-        from prism.services.github import post_comment
-
+    def test_posts_comment_and_returns_pr_comment(self) -> None:
         mock_comment = MagicMock()
         mock_comment.id = 123
         mock_comment.body = "This needs a fix"
@@ -26,9 +35,9 @@ class TestPostComment:
         mock_pr.create_review_comment.return_value = mock_comment
         mock_repo = MagicMock()
         mock_repo.get_pull.return_value = mock_pr
-        mock_get_client.return_value.get_repo.return_value = mock_repo
 
-        result = post_comment(
+        svc, _ = _make_service(mock_repo)
+        result = svc.post_comment(
             repo_slug="example/repo",
             pr_number=1,
             commit_id="abc123sha",
@@ -49,11 +58,8 @@ class TestPostComment:
         assert result.path == "src/main.py"
         assert result.line == 42
 
-    @patch("prism.services.github._get_client")
-    def test_raises_github_exception_on_api_error(self, mock_get_client: MagicMock) -> None:
+    def test_raises_github_exception_on_api_error(self) -> None:
         from github import GithubException
-
-        from prism.services.github import post_comment
 
         mock_pr = MagicMock()
         mock_pr.create_review_comment.side_effect = GithubException(
@@ -61,10 +67,10 @@ class TestPostComment:
         )
         mock_repo = MagicMock()
         mock_repo.get_pull.return_value = mock_pr
-        mock_get_client.return_value.get_repo.return_value = mock_repo
 
+        svc, _ = _make_service(mock_repo)
         with pytest.raises(GithubException):
-            post_comment(
+            svc.post_comment(
                 repo_slug="example/repo",
                 pr_number=1,
                 commit_id="abc123sha",

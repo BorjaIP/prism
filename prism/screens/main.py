@@ -19,7 +19,8 @@ from textual.widgets import (
 from prism.components.modals.review_modals import QuitConfirmModal
 from prism.components.sections.pr_list_widget import PRListWidget
 from prism.components.sections.pr_preview_widget import PRPreviewWidget
-from prism.constants import TAB_RECENT as _TAB_RECENT, TAB_REVIEW as _TAB_REVIEW
+from prism.constants import TAB_RECENT as _TAB_RECENT
+from prism.constants import TAB_REVIEW as _TAB_REVIEW
 from prism.models import PRSummary
 
 
@@ -98,10 +99,10 @@ class PRListScreen(Screen):
     @work(thread=True)
     def _load_history(self) -> None:
         """Load local Prism history — no network."""
-        from prism.services.history import load_history
+        from prism.services.history import HistoryService
 
         try:
-            summaries = load_history()
+            summaries = HistoryService().load()
             self.app.call_from_thread(self._apply_history, summaries)
         except Exception as e:
             if not self._stopping:
@@ -112,13 +113,13 @@ class PRListScreen(Screen):
     @work(thread=True, exclusive=True)
     def _fetch_review_requested(self) -> None:
         """Fetch PRs where the user is requested as reviewer from GitHub."""
-        from prism.services.github import fetch_review_requested
+        from prism.services.github import GithubService
 
         if self._stopping:
             return
         self.app.call_from_thread(self._set_review_title, "loading from GitHub…")
         try:
-            summaries = fetch_review_requested()
+            summaries = GithubService().fetch_review_requested()
             if not self._stopping:
                 self.app.call_from_thread(self._apply_review_requested, summaries)
         except Exception as e:
@@ -132,15 +133,15 @@ class PRListScreen(Screen):
 
     @work(thread=True)
     def _open_pr_by_coords(self, repo_slug: str, pr_number: int) -> None:
-        from prism.services.github import fetch_pr
-        from prism.services.history import save_to_history
+        from prism.services.github import GithubService
+        from prism.services.history import HistoryService
 
         if self._stopping:
             return
         self.app.call_from_thread(self.notify, f"Loading PR #{pr_number}…")
         try:
-            pr = fetch_pr(repo_slug, pr_number)
-            save_to_history(pr, repo_slug)
+            pr = GithubService().fetch_pr(repo_slug, pr_number)
+            HistoryService().save(pr, repo_slug)
             if not self._stopping:
 
                 def _push() -> None:
@@ -225,10 +226,10 @@ class PRListScreen(Screen):
         if self._selected_recent is None:
             self.notify("No PR selected.", severity="warning")
             return
-        from prism.services.history import delete_from_history
+        from prism.services.history import HistoryService
 
         s = self._selected_recent
-        delete_from_history(s.repo_slug, s.number)
+        HistoryService().delete(s.repo_slug, s.number)
         widget = self.query_one("#recent-list", PRListWidget)
         widget._summaries = [
             x
