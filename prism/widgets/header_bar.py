@@ -10,26 +10,34 @@ from textual.widgets import Static
 from prism.models import PRMetadata
 
 STATE_STYLES = {
-    "open": ("OPEN", "bold green"),
-    "closed": ("CLOSED", "bold red"),
-    "merged": ("MERGED", "bold magenta"),
+    "open": ("OPEN", "bold white on dark_green"),
+    "closed": ("CLOSED", "bold white on dark_red"),
+    "merged": ("MERGED", "bold white on dark_violet"),
 }
 
 REVIEW_STATE_STYLES = {
-    "APPROVED": (" APPROVED ", "bold white on dark_green"),
-    "CHANGES_REQUESTED": (" CHANGES REQUESTED ", "bold white on dark_red"),
+    "APPROVED": (" ✓ APPROVED ", "bold white on dark_green"),
+    "CHANGES_REQUESTED": (" ✗ CHANGES REQUESTED ", "bold white on dark_red"),
+}
+
+CHECKS_STATUS_STYLES = {
+    "success": (" ✓ CI ", "bold white on dark_green"),
+    "failure": (" ✗ CI ", "bold white on dark_red"),
+    "error": (" ✗ CI ", "bold white on dark_red"),
+    "pending": (" ◷ CI ", "bold black on yellow"),
 }
 
 
 class HeaderBar(Widget):
-    """Displays PR title, author, state badge, and branch info."""
+    """Displays PR title, state badge, branch, and CI status."""
 
     DEFAULT_CSS = """
     HeaderBar {
         dock: top;
-        height: 3;
+        height: 2;
         background: $primary-background;
         padding: 0 2;
+        border-bottom: tall $surface-lighten-2;
     }
     """
 
@@ -39,11 +47,11 @@ class HeaderBar(Widget):
 
     def _build_line1(self) -> Text:
         pr = self._pr
-        label, style = STATE_STYLES.get(pr.state, ("UNKNOWN", "bold"))
-        line1 = Text()
+        line1 = Text(overflow="ellipsis", no_wrap=True)
         line1.append(f"#{pr.number} ", style="bold cyan")
         line1.append(pr.title, style="bold")
         line1.append("  ")
+        label, style = STATE_STYLES.get(pr.state, (pr.state.upper(), "bold"))
         line1.append(f" {label} ", style=style)
         if pr.review_state:
             rs_label, rs_style = REVIEW_STATE_STYLES.get(
@@ -51,17 +59,23 @@ class HeaderBar(Widget):
             )
             line1.append("  ")
             line1.append(rs_label, style=rs_style)
+        if pr.checks_status:
+            ci_label, ci_style = CHECKS_STATUS_STYLES.get(
+                pr.checks_status, (f" {pr.checks_status.upper()} ", "bold")
+            )
+            line1.append("  ")
+            line1.append(ci_label, style=ci_style)
         return line1
 
     def _build_line2(self) -> Text:
         pr = self._pr
         total_add = sum(f.additions for f in pr.files)
         total_del = sum(f.deletions for f in pr.files)
-        line2 = Text()
+        line2 = Text(overflow="ellipsis", no_wrap=True)
         line2.append(f"@{pr.author}", style="dim")
         line2.append("  ")
         line2.append(pr.base_branch, style="blue")
-        line2.append(" <- ", style="dim")
+        line2.append(" ← ", style="dim")
         line2.append(pr.head_branch, style="blue")
         line2.append(f"  {len(pr.files)} files  ", style="dim")
         line2.append(f"+{total_add}", style="green")

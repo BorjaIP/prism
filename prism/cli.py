@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 from typing import Optional
 
@@ -10,7 +11,6 @@ import typer
 app = typer.Typer(
     name="prism",
     help="Terminal UI for reviewing GitHub PRs.",
-    no_args_is_help=True,
 )
 
 _GITHUB_PR_URL_RE = re.compile(
@@ -27,44 +27,39 @@ def _parse_github_url(url: str) -> tuple[str, int] | None:
 
 
 @app.command()
-def review(
-    repo_or_url: str = typer.Argument(
-        help="Repository in 'owner/repo' format, or a GitHub PR URL"
+def main(
+    repo_or_url: Optional[str] = typer.Argument(
+        default=None,
+        help="GitHub PR URL or 'owner/repo'. Omit to open the PR browser.",
     ),
     pr_number: Optional[int] = typer.Argument(
-        default=None, help="Pull request number (not needed when passing a URL)"
+        default=None, help="PR number (only needed with 'owner/repo' format)."
     ),
 ) -> None:
-    """Open a PR for review in the terminal UI."""
+    """Open the PR browser, optionally jumping straight to a specific PR."""
     from prism.app import PRismApp
-    from prism.services.github import fetch_pr
 
-    parsed = _parse_github_url(repo_or_url)
-    if parsed:
-        repo, pr_number = parsed
-    else:
-        repo = repo_or_url
-        if pr_number is None:
-            typer.echo(
-                "Error: pr_number is required when not passing a GitHub URL.", err=True
-            )
-            raise typer.Exit(code=1)
+    initial_repo: str | None = None
+    initial_number: int | None = None
 
-    typer.echo(f"Fetching PR #{pr_number} from {repo}...")
+    if repo_or_url is not None:
+        parsed = _parse_github_url(repo_or_url)
+        if parsed:
+            initial_repo, initial_number = parsed
+        else:
+            if pr_number is None:
+                typer.echo(
+                    "Error: pr_number is required when not passing a GitHub URL.", err=True
+                )
+                raise typer.Exit(code=1)
+            initial_repo = repo_or_url
+            initial_number = pr_number
 
-    try:
-        pr = fetch_pr(repo, pr_number)
-    except RuntimeError as e:
-        typer.echo(f"Error: {e}", err=True)
-        raise typer.Exit(code=1) from None
-    except Exception as e:
-        typer.echo(f"Failed to fetch PR: {e}", err=True)
-        raise typer.Exit(code=1) from None
-
-    typer.echo(f"Loaded: {pr.title} ({len(pr.files)} files)")
-
-    tui = PRismApp(pr, repo, pr_number)
+    tui = PRismApp(initial_repo=initial_repo, initial_pr_number=initial_number)
     tui.run()
+    # Force-exit: background GitHub/network threads are non-daemon and would
+    # otherwise keep the process alive after the TUI closes.
+    os._exit(0)
 
 
 if __name__ == "__main__":

@@ -1,95 +1,120 @@
-/* Prism — PR Review TUI Theme */
+/* Prism — gh-dash inspired terminal UI */
+
+/* ── Base ───────────────────────────────────── */
 
 Screen {
-    background: $surface;
+    background: $background;
 }
 
-/* ── Header ────────────────────────────────── */
-
-#header-bar {
-    dock: top;
-    height: 3;
-    background: $primary-background;
-    color: $text;
-    padding: 0 2;
-}
-
-#header-bar .pr-title {
-    text-style: bold;
-}
-
-/* ── Main content area ─────────────────────── */
+/* ── Main content ────────────────────────────── */
 
 #main-content {
     layout: horizontal;
+    height: 1fr;
 }
+
+/* ── gh-dash style: all panels boxed ────────── */
+
+FileTreePanel,
+DiffViewer,
+CommentsPanel,
+AIPanel {
+    border: round $surface-lighten-2;
+    border-title-align: left;
+    border-title-color: $text-muted;
+    border-title-style: bold;
+}
+
+FileTreePanel:focus-within,
+DiffViewer:focus-within,
+CommentsPanel:focus-within,
+AIPanel:focus-within {
+    border: round $accent;
+    border-title-color: $accent;
+}
+
+/* ── Panel sizing ────────────────────────────── */
 
 #file-tree-panel {
-    width: 30;
-    min-width: 20;
-    border-right: tall $primary-background;
-}
-
-#file-tree-panel:focus-within {
-    border-right: tall $accent;
+    width: 28;
+    min-width: 12;
 }
 
 #diff-viewer {
     width: 1fr;
+    min-width: 20;
 }
 
-#diff-viewer:focus-within {
-    border: tall $accent;
+#comments-panel {
+    width: 42;
+    min-width: 20;
 }
 
 #ai-panel {
-    width: 35;
+    width: 32;
     min-width: 20;
-    border-left: tall $primary-background;
-    padding: 1 2;
 }
 
-#ai-panel:focus-within {
-    border-left: tall $accent;
+/* ── Panel resizer ───────────────────────────── */
+
+PanelResizer {
+    width: 1;
+    background: transparent;
 }
 
-/* ── File tree ─────────────────────────────── */
+PanelResizer:hover {
+    background: $accent 40%;
+}
+
+PanelResizer.-dragging {
+    background: $accent;
+}
+
+/* ── File tree ───────────────────────────────── */
 
 FileTreePanel Tree {
     padding: 0 1;
 }
 
-FileTreePanel .tree-label-added {
-    color: $success;
-}
-
-FileTreePanel .tree-label-removed {
-    color: $error;
-}
-
-FileTreePanel .tree-label-modified {
-    color: $warning;
-}
-
-/* ── Diff viewer ───────────────────────────── */
+/* ── Diff viewer ─────────────────────────────── */
 
 DiffViewer RichLog {
     padding: 0 1;
 }
 
-DiffViewer #diff-loading {
+DiffViewer #diff-placeholder {
     content-align: center middle;
     color: $text-muted;
     text-style: italic;
 }
 
-/* ── Comments Panel ────────────────────────── */
+/* ── Comments Panel tabs ─────────────────────── */
 
-CommentsPanel {
-    background: $surface;
+CommentsPanel TabbedContent {
+    height: 1fr;
 }
 
-/* ── Comment Composer Modal ─────────────────── */
+CommentsPanel TabPane {
+    padding: 0 1;
+    height: 1fr;
+}
+
+CommentsPanel #reviews-empty,
+CommentsPanel #inline-empty {
+    content-align: center middle;
+    color: $text-muted;
+    text-style: italic;
+    width: 1fr;
+    height: 1fr;
+}
+
+/* ── AI panel ────────────────────────────────── */
+
+AIPanel {
+    padding: 1 1;
+}
+
+/* ── Comment Composer Modal ──────────────────── */
 
 CommentComposerScreen {
     align: center middle;
@@ -100,7 +125,7 @@ CommentComposerScreen {
     height: auto;
     max-height: 30;
     background: $surface;
-    border: tall $accent;
+    border: round $accent;
     padding: 1 2;
 }
 
@@ -126,17 +151,62 @@ CommentComposerScreen {
     height: 3;
 }
 
-/* ── Footer help bar ───────────────────────── */
+/* ── PR List Screen ──────────────────────────── */
 
-#help-footer {
+#pr-tabs {
+    height: 1fr;
+}
+
+#pr-tabs TabPane {
+    padding: 0;
+    height: 1fr;
+}
+
+#recent-pane,
+#review-pane {
+    layout: horizontal;
+    height: 1fr;
+}
+
+#review-switcher {
+    height: 1fr;
+}
+
+PRListWidget,
+PRPreviewWidget {
+    border: round $surface-lighten-2;
+    border-title-align: left;
+    border-title-color: $text-muted;
+    border-title-style: bold;
+}
+
+PRListWidget:focus-within,
+PRPreviewWidget:focus-within {
+    border: round $accent;
+    border-title-color: $accent;
+}
+
+PRListWidget {
+    width: 3fr;
+    min-width: 40;
+}
+
+PRPreviewWidget {
+    width: 2fr;
+    min-width: 30;
+    padding: 1 2;
+}
+
+/* ── Jump overlay ────────────────────────────── */
+
+JumpOverlay {
+    background: transparent;
+}
+
+JumpOverlay #jump-help {
     dock: bottom;
     height: 1;
     background: $primary-background;
-    color: $text-muted;
-    padding: 0 2;
-}
-
-#help-footer .key {
-    text-style: bold;
     color: $accent;
+    padding: 0 2;
 }

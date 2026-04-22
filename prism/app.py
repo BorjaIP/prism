@@ -6,8 +6,9 @@ from pathlib import Path
 
 from textual.app import App
 
-from prism.models import PRMetadata
-from prism.screens.review import ReviewScreen
+from prism.commands import PrismProvider, ThemeProvider
+from prism.config import load_config
+from prism.themes import load_theme
 
 CSS_PATH = Path(__file__).parent / "prism.tcss"
 
@@ -17,12 +18,35 @@ class PRismApp(App):
 
     TITLE = "PRism"
     CSS_PATH = CSS_PATH
+    COMMANDS = {PrismProvider, ThemeProvider}
 
-    def __init__(self, pr: PRMetadata, repo_slug: str, pr_number: int) -> None:
+    def __init__(
+        self,
+        initial_repo: str | None = None,
+        initial_pr_number: int | None = None,
+    ) -> None:
         super().__init__()
-        self._pr = pr
-        self._repo_slug = repo_slug
-        self._pr_number = pr_number
+        self._initial_repo = initial_repo
+        self._initial_pr_number = initial_pr_number
 
     def on_mount(self) -> None:
-        self.push_screen(ReviewScreen(self._pr, self._repo_slug, self._pr_number))
+        config = load_config()
+        if config.keymap:
+            self.set_keymap(config.keymap)
+        from prism.themes import _BUILTIN
+        for t in _BUILTIN.values():
+            self.register_theme(t.to_textual_theme())
+
+        theme = load_theme(config.theme)
+        textual_theme = theme.to_textual_theme()
+        if textual_theme.name not in _BUILTIN:
+            self.register_theme(textual_theme)
+        self.theme = textual_theme.name
+
+        from prism.screens.pr_list import PRListScreen
+        self.push_screen(
+            PRListScreen(
+                initial_repo=self._initial_repo,
+                initial_pr_number=self._initial_pr_number,
+            )
+        )

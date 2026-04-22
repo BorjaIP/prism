@@ -8,6 +8,24 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 
+class PRSummary(BaseModel):
+    """Lightweight pull request summary used for the PR list screen."""
+
+    number: int
+    title: str
+    author: str
+    repo_slug: str  # "owner/repo"
+    state: str  # open, closed, merged
+    base_branch: str
+    head_branch: str
+    review_state: str | None = None
+    checks_status: str | None = None
+    updated_at: datetime
+    html_url: str = ""
+    body: str = ""
+    comments: int = 0
+
+
 @dataclass(frozen=True)
 class Comment:
     """A transient UI comment value composed by the user before posting."""
@@ -43,6 +61,7 @@ class PRMetadata(BaseModel):
     head_sha: str = ""  # PR head commit SHA, required for create_review_comment
     review_state: str | None = None  # "APPROVED" | "CHANGES_REQUESTED" — set locally after submitting
     review_comments: list["PRComment"] = []  # inline review comments pre-loaded at fetch time
+    checks_status: str | None = None  # "passing" | "failing" | "pending" from combined commit status
 
 
 class PRComment(BaseModel):

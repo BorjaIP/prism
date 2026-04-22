@@ -20,9 +20,6 @@ class DiffViewer(Widget):
     DiffViewer {
         width: 1fr;
     }
-    DiffViewer:focus-within {
-        border: tall $accent;
-    }
     DiffViewer RichLog {
         padding: 0 1;
     }
@@ -51,6 +48,7 @@ class DiffViewer(Widget):
             yield CommentList()
 
     def on_mount(self) -> None:
+        self.border_title = "DIFF"
         self.query_one("#diff-log", RichLog).display = False
 
     @property
@@ -63,9 +61,18 @@ class DiffViewer(Widget):
         """Return the current line number context (0 until precise tracking is added)."""
         return 0
 
+    def set_review_comments(self, comments: list[PRComment]) -> None:
+        """Replace the cached review comments (called after refresh)."""
+        self._review_comments = comments
+
     def show_diff(self, pr_file: PRFile) -> None:
         """Load and display the diff for the given file."""
+        from pathlib import PurePosixPath
+
         self._current_file = pr_file.filename
+        basename = PurePosixPath(pr_file.filename).name
+        self.border_title = f"DIFF  {basename}"
+        self.border_subtitle = f"+{pr_file.additions} -{pr_file.deletions}"
         self._load_diff(pr_file)
         file_comments = [
             c for c in self._review_comments if c.path == pr_file.filename

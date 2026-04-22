@@ -7,7 +7,7 @@ import os
 from github import Github
 from github.PullRequest import PullRequest
 
-from prism.models import PRComment, PRFile, PRMetadata, PRReview
+from prism.models import PRComment, PRFile, PRMetadata, PRReview, PRSummary
 
 
 def _get_client() -> Github:
@@ -18,6 +18,49 @@ def _get_client() -> Github:
             "Create one at https://github.com/settings/tokens"
         )
     return Github(token)
+
+
+def _issue_to_summary(issue) -> PRSummary | None:
+    """Convert a search Issue to a PRSummary using only data already on the object.
+
+    Deliberately avoids any extra API calls (no as_pull_request, get_reviews,
+    get_combined_status) so that listing is fast regardless of result count.
+    """
+    try:
+        repo_full_name = issue.repository.full_name
+        pr_part = issue.pull_request  # PullRequestPart — always present on PR issues
+        state = "merged" if (pr_part and pr_part.merged_at) else issue.state
+        return PRSummary(
+            number=issue.number,
+            title=issue.title,
+            author=issue.user.login if issue.user else "unknown",
+            repo_slug=repo_full_name,
+            state=state,
+            base_branch="",
+            head_branch="",
+            review_state=None,
+            checks_status=None,
+            updated_at=issue.updated_at,
+            html_url=issue.html_url,
+            body=issue.body or "",
+            comments=issue.comments,
+        )
+    except Exception:
+        return None
+
+
+def fetch_my_prs(state: str = "open") -> list[PRSummary]:
+    """Fetch pull requests authored by the authenticated user (single search call)."""
+    client = _get_client()
+    results = client.search_issues(f"is:pr is:{state} author:@me sort:updated-desc")
+    return [s for issue in results if (s := _issue_to_summary(issue)) is not None]
+
+
+def fetch_review_requested() -> list[PRSummary]:
+    """Fetch open PRs where the authenticated user is requested as reviewer (single search call)."""
+    client = _get_client()
+    results = client.search_issues("is:pr is:open review-requested:@me sort:updated-desc")
+    return [s for issue in results if (s := _issue_to_summary(issue)) is not None]
 
 
 def fetch_pr(repo_slug: str, pr_number: int) -> PRMetadata:
@@ -60,6 +103,13 @@ def fetch_pr(repo_slug: str, pr_number: int) -> PRMetadata:
 
     state = "merged" if pr.merged else pr.state
 
+    checks_status: str | None = None
+    try:
+        combined = repo.get_commit(pr.head.sha).get_combined_status()
+        checks_status = combined.state  # "success" | "failure" | "pending" | "error"
+    except Exception:
+        pass
+
     return PRMetadata(
         number=pr.number,
         title=pr.title,
@@ -72,6 +122,7 @@ def fetch_pr(repo_slug: str, pr_number: int) -> PRMetadata:
         html_url=pr.html_url,
         head_sha=pr.head.sha,
         review_comments=review_comments,
+        checks_status=checks_status,
     )
 
 
