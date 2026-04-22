@@ -1,5 +1,3 @@
-"""Review workspace section — full panel layout for PR code review."""
-
 from __future__ import annotations
 
 from textual.app import ComposeResult

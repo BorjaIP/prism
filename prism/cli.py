@@ -1,21 +1,20 @@
 from __future__ import annotations
 
 import os
-import re
 
 import typer
+
+from prism.constants import GITHUB_PR_URL_RE
 
 app = typer.Typer(
     name="prism",
     help="Terminal UI for reviewing GitHub PRs.",
 )
 
-_GITHUB_PR_URL_RE = re.compile(r"https?://github\.com/([^/]+/[^/]+)/pull/(\d+)")
-
 
 def _parse_github_url(url: str) -> tuple[str, int] | None:
     """Return (owner/repo, pr_number) if *url* is a GitHub PR URL, else None."""
-    m = _GITHUB_PR_URL_RE.match(url.rstrip("/"))
+    m = GITHUB_PR_URL_RE.match(url.rstrip("/"))
     if m:
         return m.group(1), int(m.group(2))
     return None

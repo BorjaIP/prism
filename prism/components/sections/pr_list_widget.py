@@ -1,5 +1,3 @@
-"""PR list widget — DataTable-based left panel for the PR selection screen."""
-
 from __future__ import annotations
 
 from datetime import UTC, datetime

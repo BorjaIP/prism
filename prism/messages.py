@@ -1,10 +1,3 @@
-"""Centralised re-exports of all custom Message classes.
-
-Import from here instead of from individual component files to decouple
-consumers from the concrete widget locations. Handler names are unaffected
-because Textual resolves handlers from the widget that owns the nested class.
-"""
-
 from __future__ import annotations
 
 from prism.components.panels.ai_panel import AIPanel

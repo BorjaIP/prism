@@ -3,18 +3,17 @@ from __future__ import annotations
 import re
 
 from textual.app import ComposeResult
+
+from prism.constants import GITHUB_PR_URL_RE
 from textual.binding import Binding
 from textual.containers import Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Button, Input, Label
 
-_GITHUB_PR_URL_RE = re.compile(r"https?://github\.com/([^/]+/[^/]+)/pull/(\d+)")
-
-
 def _parse(value: str) -> tuple[str, int] | None:
     """Parse a GitHub PR URL or 'owner/repo number' string."""
     value = value.strip()
-    m = _GITHUB_PR_URL_RE.match(value.rstrip("/"))
+    m = GITHUB_PR_URL_RE.match(value.rstrip("/"))
     if m:
         return m.group(1), int(m.group(2))
     # Try "owner/repo number" or "owner/repo#number"

@@ -4,10 +4,10 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
+from prism.constants import HISTORY_BODY_EXCERPT_LEN, HISTORY_MAX_ENTRIES
 from prism.models import PRMetadata, PRSummary
 
 HISTORY_PATH = Path.home() / ".config" / "prism" / "history.json"
-_MAX_ENTRIES = 50
 
 
 def _now_iso() -> str:
@@ -52,13 +52,13 @@ def save_to_history(pr: PRMetadata, repo_slug: str) -> None:
         "review_state": pr.review_state,
         "checks_status": pr.checks_status,
         "html_url": pr.html_url,
-        "body": pr.body[:500] if pr.body else "",  # truncate to save space
+        "body": pr.body[:HISTORY_BODY_EXCERPT_LEN] if pr.body else "",  # truncate to save space
         "opened_at": _now_iso(),
         # updated_at used as sort key — use opened_at if not available
         "updated_at": _now_iso(),
     }
     entries.insert(0, entry)
-    entries = entries[:_MAX_ENTRIES]
+    entries = entries[:HISTORY_MAX_ENTRIES]
 
     with open(HISTORY_PATH, "w") as f:
         json.dump(entries, f, indent=2)

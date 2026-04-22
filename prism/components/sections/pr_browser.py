@@ -1,5 +1,3 @@
-"""PR browser section — horizontal split of PR list and preview panels."""
-
 from __future__ import annotations
 
 from textual.app import ComposeResult

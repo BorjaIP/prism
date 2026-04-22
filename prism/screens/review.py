@@ -24,9 +24,14 @@ from prism.components.panels.diff_viewer import DiffViewer
 from prism.components.panels.file_tree import FileTreePanel
 from prism.components.sections.header_bar import HeaderBar
 from prism.components.sections.review_workspace import ReviewWorkspace
+from prism.constants import (
+    COMMENTS_EXPANDED_WIDTH,
+    COMMENTS_NORMAL_WIDTH,
+    DIFF_EXPANDED_WIDTH,
+    DIFF_NORMAL_WIDTH,
+    PANEL_CYCLE as _PANEL_CYCLE,
+)
 from prism.models import Comment, PRComment, PRMetadata
-
-_PANEL_CYCLE = [None, "diff", "comments"]
 
 
 class ReviewScreen(Screen):
@@ -172,14 +177,14 @@ class ReviewScreen(Screen):
         diff = self.query_one(DiffViewer)
         comments = self.query_one(CommentsPanel)
         if panel == "diff":
-            diff.styles.width = "4fr"
-            comments.styles.width = 32
+            diff.styles.width = DIFF_EXPANDED_WIDTH
+            comments.styles.width = COMMENTS_EXPANDED_WIDTH
         elif panel == "comments":
-            diff.styles.width = "1fr"
-            comments.styles.width = "4fr"
+            diff.styles.width = DIFF_NORMAL_WIDTH
+            comments.styles.width = DIFF_EXPANDED_WIDTH
         else:
-            diff.styles.width = "1fr"
-            comments.styles.width = 42
+            diff.styles.width = DIFF_NORMAL_WIDTH
+            comments.styles.width = COMMENTS_NORMAL_WIDTH
 
     def action_cycle_expand(self) -> None:
         """Cycle expanded_panel through None → diff → comments → None."""

@@ -5,12 +5,14 @@ import subprocess
 
 from rich.text import Text
 
+from prism.constants import DEFAULT_DIFF_WIDTH
+
 
 def _delta_available() -> bool:
     return shutil.which("delta") is not None
 
 
-def render_diff(patch: str, width: int = 120) -> Text:
+def render_diff(patch: str, width: int = DEFAULT_DIFF_WIDTH) -> Text:
     """Render a unified diff patch as styled Rich Text.
 
     Tries to use `delta` for syntax-highlighted output.

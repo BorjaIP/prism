@@ -1,5 +1,3 @@
-"""Badge style dictionaries — centralised from across the codebase."""
-
 from __future__ import annotations
 
 # ── Risk level ────────────────────────────────────────────────────────────────

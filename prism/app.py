@@ -8,7 +8,7 @@ from prism.commands import PrismProvider, ThemeProvider
 from prism.config import load_config
 from prism.themes import load_theme
 
-CSS_PATH = Path(__file__).parent / "prism.tcss"
+CSS_PATH = Path(__file__).parent / "style" / "prism.tcss"
 
 
 class PRismApp(App):

@@ -1,5 +1,3 @@
-"""PR preview widget — right panel for the PR selection screen."""
-
 from __future__ import annotations
 
 from rich.console import RenderableType

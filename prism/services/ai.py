@@ -7,6 +7,7 @@ from pathlib import Path
 import anthropic
 import diskcache
 
+from prism.constants import AI_CLI_TIMEOUT, AI_MAX_BODY_CHARS, AI_MAX_PATCH_CHARS, AI_MAX_TOKENS
 from prism.models import AIAnalysis, AIConcern, PRFile, PRMetadata
 
 _CACHE: diskcache.Cache | None = None
@@ -54,8 +55,8 @@ def _get_anthropic_client() -> anthropic.Anthropic:
 
 
 def _build_prompt(pr: PRMetadata, pr_file: PRFile) -> str:
-    patch = (pr_file.patch or "")[:8000]
-    body_excerpt = (pr.body or "")[:2000] or "(none)"
+    patch = (pr_file.patch or "")[:AI_MAX_PATCH_CHARS]
+    body_excerpt = (pr.body or "")[:AI_MAX_BODY_CHARS] or "(none)"
     return (
         f"PR title: {pr.title}\n"
         f"PR author: {pr.author}\n"
@@ -99,7 +100,7 @@ def _call_claude_code(prompt: str, *, model: str) -> str:
         input=prompt,
         capture_output=True,
         text=True,
-        timeout=60,
+        timeout=AI_CLI_TIMEOUT,
     )
     if result.returncode != 0:
         raise RuntimeError(f"claude CLI failed: {result.stderr.strip() or 'no error output'}")
@@ -177,7 +178,7 @@ def analyze_file(
         client = _get_anthropic_client()
         message = client.messages.create(
             model=model,
-            max_tokens=1024,
+            max_tokens=AI_MAX_TOKENS,
             system=_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": _build_prompt(pr, pr_file)}],
         )

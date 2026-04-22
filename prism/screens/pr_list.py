@@ -19,10 +19,8 @@ from textual.widgets import (
 from prism.components.modals.review_modals import QuitConfirmModal
 from prism.components.sections.pr_list_widget import PRListWidget
 from prism.components.sections.pr_preview_widget import PRPreviewWidget
+from prism.constants import TAB_RECENT as _TAB_RECENT, TAB_REVIEW as _TAB_REVIEW
 from prism.models import PRSummary
-
-_TAB_RECENT = "tab-recent"
-_TAB_REVIEW = "tab-review"
 
 
 class PRListScreen(Screen):

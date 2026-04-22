@@ -13,6 +13,7 @@ fix:
 check:
 	uv run ruff check .
 	uv run ruff format --check .
+	uv run python scripts/check_no_module_docstring.py prism/ tests/
 
 test: fix
 	uv run pytest
