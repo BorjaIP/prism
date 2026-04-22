@@ -1,17 +1,33 @@
 from __future__ import annotations
 
 import os
+import time
+from datetime import UTC, datetime
+from pathlib import Path
 
+import diskcache
 from github import Github
 from github.PullRequest import PullRequest
 
+from prism.constants import PR_LIST_CACHE_TTL, PRISM_CACHE_DIR
 from prism.models import PRComment, PRFile, PRMetadata, PRReview, PRSummary
+
+_CACHE_KEY_REVIEW_REQUESTED = "github:review_requested"
+
+
+def _pr_cache_key(repo_slug: str, pr_number: int) -> str:
+    return f"github:pr:{repo_slug}:{pr_number}"
+
+
+def _ts_key(key: str) -> str:
+    """Companion key that stores the unix timestamp of when a cache entry was written."""
+    return f"{key}:ts"
 
 
 class GithubService:
     """Wrapper around the GitHub API for all PR-related operations."""
 
-    def __init__(self, token: str | None = None) -> None:
+    def __init__(self, token: str | None = None, cache_dir: Path | None = None) -> None:
         resolved = token or os.environ.get("GITHUB_TOKEN", "")
         if not resolved:
             raise RuntimeError(
@@ -19,6 +35,29 @@ class GithubService:
                 "Create one at https://github.com/settings/tokens"
             )
         self._client = Github(resolved)
+        self._cache = diskcache.Cache(cache_dir or PRISM_CACHE_DIR)
+
+    # ── Cache helpers ─────────────────────────────────────────────────────────
+
+    def _cache_set(self, key: str, value: object) -> None:
+        """Store *value* under *key* with TTL, plus a companion timestamp entry."""
+        self._cache.set(key, value, expire=PR_LIST_CACHE_TTL)
+        self._cache.set(_ts_key(key), time.time())  # no expire — survives for age check
+
+    def _cached_at(self, key: str) -> datetime | None:
+        """Return when *key* was last written to cache, or None if unknown."""
+        ts = self._cache.get(_ts_key(key))
+        if ts is None:
+            return None
+        return datetime.fromtimestamp(ts, tz=UTC)
+
+    def pr_cached_at(self, repo_slug: str, pr_number: int) -> datetime | None:
+        """Return when the given PR was last cached, or None."""
+        return self._cached_at(_pr_cache_key(repo_slug, pr_number))
+
+    def review_requested_cached_at(self) -> datetime | None:
+        """Return when the review-requested list was last cached, or None."""
+        return self._cached_at(_CACHE_KEY_REVIEW_REQUESTED)
 
     # ── Internal helpers ──────────────────────────────────────────────────────
 
@@ -58,18 +97,42 @@ class GithubService:
         results = self._client.search_issues(f"is:pr is:{state} author:@me sort:updated-desc")
         return [s for issue in results if (s := self._issue_to_summary(issue)) is not None]
 
-    def fetch_review_requested(self) -> list[PRSummary]:
-        """Fetch open PRs where the authenticated user is requested as reviewer."""
-        results = self._client.search_issues("is:pr is:open review-requested:@me sort:updated-desc")
-        return [s for issue in results if (s := self._issue_to_summary(issue)) is not None]
+    def fetch_review_requested(self, *, force_refresh: bool = False) -> list[PRSummary]:
+        """Fetch open PRs where the authenticated user is requested as reviewer.
 
-    def fetch_pr(self, repo_slug: str, pr_number: int) -> PRMetadata:
+        Results are cached locally for PR_LIST_CACHE_TTL seconds so repeated
+        tab switches don't hit the GitHub search API every time.
+        Pass force_refresh=True to bypass the cache (e.g. on manual 'r' refresh).
+        """
+        if not force_refresh and _CACHE_KEY_REVIEW_REQUESTED in self._cache:
+            cached = self._cache[_CACHE_KEY_REVIEW_REQUESTED]
+            if isinstance(cached, list):
+                return cached
+        results = self._client.search_issues("is:pr is:open review-requested:@me sort:updated-desc")
+        summaries = [s for issue in results if (s := self._issue_to_summary(issue)) is not None]
+        self._cache_set(_CACHE_KEY_REVIEW_REQUESTED, summaries)
+        return summaries
+
+    def fetch_pr(
+        self, repo_slug: str, pr_number: int, *, force_refresh: bool = False
+    ) -> PRMetadata:
         """Fetch PR metadata and file list from GitHub.
+
+        Results are cached locally for PR_LIST_CACHE_TTL seconds. The diff
+        content is stable between commits, so a short TTL is enough to avoid
+        redundant fetches while still surfacing newly pushed commits on refresh.
+        Pass force_refresh=True to bypass the cache (used by the 'r' keybinding).
 
         Args:
             repo_slug: Repository in 'owner/repo' format.
             pr_number: Pull request number.
         """
+        key = _pr_cache_key(repo_slug, pr_number)
+        if not force_refresh and key in self._cache:
+            cached = self._cache[key]
+            if isinstance(cached, PRMetadata):
+                return cached
+
         repo = self._client.get_repo(repo_slug)
         pr: PullRequest = repo.get_pull(pr_number)
 
@@ -109,7 +172,7 @@ class GithubService:
         except Exception:
             pass
 
-        return PRMetadata(
+        result = PRMetadata(
             number=pr.number,
             title=pr.title,
             author=pr.user.login if pr.user else "unknown",
@@ -123,6 +186,8 @@ class GithubService:
             review_comments=review_comments,
             checks_status=checks_status,
         )
+        self._cache_set(key, result)
+        return result
 
     def fetch_comments(self, repo_slug: str, pr_number: int) -> list[PRComment]:
         """Fetch all inline review comments for the PR."""

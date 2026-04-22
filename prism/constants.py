@@ -52,6 +52,11 @@ AI_CLI_TIMEOUT = 60  # seconds
 HISTORY_MAX_ENTRIES = 50
 HISTORY_BODY_EXCERPT_LEN = 500
 
+# ── PR list cache ─────────────────────────────────────────────────────────────
+
+PR_LIST_CACHE_TTL = 3600  # seconds — how long fetched data stays in cache (1 h)
+PR_LIST_STALE_AFTER = 300  # seconds — age at which the ↻ stale indicator appears (5 min)
+
 # ── Diff rendering ────────────────────────────────────────────────────────────
 
 DEFAULT_DIFF_WIDTH = 120

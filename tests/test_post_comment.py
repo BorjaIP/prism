@@ -9,7 +9,7 @@ from prism.services.github import GithubService
 
 
 def _make_service(mock_repo=None) -> tuple[GithubService, MagicMock]:
-    with patch("prism.services.github.Github"):
+    with patch("prism.services.github.Github"), patch("prism.services.github.diskcache.Cache"):
         svc = GithubService(token="test")
     mock_client = MagicMock()
     if mock_repo is not None:

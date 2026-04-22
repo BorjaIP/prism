@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import subprocess
 import webbrowser
+from datetime import datetime
 
 from textual import work
 from textual.app import ComposeResult
@@ -148,17 +149,24 @@ class ReviewScreen(Screen):
     # Tracks which panel is currently expanded ("diff" | "comments" | None)
     expanded_panel: reactive[str | None] = reactive(None)
 
-    def __init__(self, pr: PRMetadata, repo_slug: str, pr_number: int) -> None:
+    def __init__(
+        self,
+        pr: PRMetadata,
+        repo_slug: str,
+        pr_number: int,
+        cached_at: datetime | None = None,
+    ) -> None:
         super().__init__()
         self._pr = pr
         self._repo_slug = repo_slug
         self._pr_number = pr_number
+        self._cached_at = cached_at
 
     def compose(self) -> ComposeResult:
         from prism.config import load_config
 
         config = load_config()
-        yield HeaderBar(self._pr)
+        yield HeaderBar(self._pr, self._cached_at)
         yield ReviewWorkspace(
             self._pr, self._repo_slug, self._pr_number, show_ai=config.show_ai_panel
         )
@@ -221,20 +229,23 @@ class ReviewScreen(Screen):
         from prism.services.github import GithubService
 
         try:
-            pr = GithubService().fetch_pr(self._repo_slug, self._pr_number)
-            self.app.call_from_thread(self._apply_refresh, pr)
+            svc = GithubService()
+            pr = svc.fetch_pr(self._repo_slug, self._pr_number, force_refresh=True)
+            cached_at = svc.pr_cached_at(self._repo_slug, self._pr_number)
+            self.app.call_from_thread(self._apply_refresh, pr, cached_at)
         except GithubException as e:
             msg = e.data.get("message", str(e)) if isinstance(e.data, dict) else str(e)
             self.app.call_from_thread(self.notify, f"Refresh failed: {msg}", severity="error")
         except Exception as e:
             self.app.call_from_thread(self.notify, f"Refresh failed: {e}", severity="error")
 
-    def _apply_refresh(self, pr: PRMetadata) -> None:
+    def _apply_refresh(self, pr: PRMetadata, cached_at: datetime | None = None) -> None:
         """Update all widgets with freshly fetched PR data (main thread)."""
         self._pr = pr
+        self._cached_at = cached_at
         self.query_one(FileTreePanel).set_files(pr.files, pr.review_comments)
         self.query_one(DiffViewer).set_review_comments(pr.review_comments)
-        self.query_one(HeaderBar).update_review_state(pr.review_state)
+        self.query_one(HeaderBar).update_pr(pr, cached_at)
         # Re-select the currently displayed file to refresh diff + inline comments
         current = self.query_one(DiffViewer).current_file
         if current:

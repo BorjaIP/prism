@@ -33,7 +33,7 @@ class TestGithubServiceInit:
 
 def _make_service(mock_repo=None) -> tuple[GithubService, MagicMock]:
     """Build a GithubService with a mocked underlying Github client."""
-    with patch("prism.services.github.Github"):
+    with patch("prism.services.github.Github"), patch("prism.services.github.diskcache.Cache"):
         svc = GithubService(token="test")
     mock_client = MagicMock()
     if mock_repo is not None:

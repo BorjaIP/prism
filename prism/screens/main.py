@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import webbrowser
+from datetime import UTC, datetime
 
 from rich.text import Text
 from textual import work
@@ -19,9 +20,16 @@ from textual.widgets import (
 from prism.components.modals.review_modals import QuitConfirmModal
 from prism.components.sections.pr_list_widget import PRListWidget
 from prism.components.sections.pr_preview_widget import PRPreviewWidget
+from prism.constants import PR_LIST_STALE_AFTER
 from prism.constants import TAB_RECENT as _TAB_RECENT
 from prism.constants import TAB_REVIEW as _TAB_REVIEW
 from prism.models import PRSummary
+
+
+def _is_stale(cached_at: datetime | None) -> bool:
+    if cached_at is None:
+        return False
+    return (datetime.now(tz=UTC) - cached_at).total_seconds() > PR_LIST_STALE_AFTER
 
 
 class PRListScreen(Screen):
@@ -111,17 +119,23 @@ class PRListScreen(Screen):
                 )
 
     @work(thread=True, exclusive=True)
-    def _fetch_review_requested(self) -> None:
-        """Fetch PRs where the user is requested as reviewer from GitHub."""
+    def _fetch_review_requested(self, *, force_refresh: bool = False) -> None:
+        """Fetch PRs where the user is requested as reviewer from GitHub.
+
+        Uses a local cache (TTL: PR_LIST_CACHE_TTL seconds). Pass
+        force_refresh=True to bypass it — used by the 'r' keybinding.
+        """
         from prism.services.github import GithubService
 
         if self._stopping:
             return
         self.app.call_from_thread(self._set_review_title, "loading from GitHub…")
         try:
-            summaries = GithubService().fetch_review_requested()
+            svc = GithubService()
+            summaries = svc.fetch_review_requested(force_refresh=force_refresh)
+            cached_at = svc.review_requested_cached_at()
             if not self._stopping:
-                self.app.call_from_thread(self._apply_review_requested, summaries)
+                self.app.call_from_thread(self._apply_review_requested, summaries, cached_at)
         except Exception as e:
             if not self._stopping:
                 self.app.call_from_thread(
@@ -132,7 +146,9 @@ class PRListScreen(Screen):
                 self.app.call_from_thread(self._set_review_title, "")
 
     @work(thread=True)
-    def _open_pr_by_coords(self, repo_slug: str, pr_number: int) -> None:
+    def _open_pr_by_coords(
+        self, repo_slug: str, pr_number: int, *, force_refresh: bool = False
+    ) -> None:
         from prism.services.github import GithubService
         from prism.services.history import HistoryService
 
@@ -140,14 +156,16 @@ class PRListScreen(Screen):
             return
         self.app.call_from_thread(self.notify, f"Loading PR #{pr_number}…")
         try:
-            pr = GithubService().fetch_pr(repo_slug, pr_number)
+            svc = GithubService()
+            pr = svc.fetch_pr(repo_slug, pr_number, force_refresh=force_refresh)
+            cached_at = svc.pr_cached_at(repo_slug, pr_number)
             HistoryService().save(pr, repo_slug)
             if not self._stopping:
 
                 def _push() -> None:
                     from prism.screens.review import ReviewScreen
 
-                    self.app.push_screen(ReviewScreen(pr, repo_slug, pr_number))
+                    self.app.push_screen(ReviewScreen(pr, repo_slug, pr_number, cached_at=cached_at))
 
                 self.app.call_from_thread(_push)
         except Exception as e:
@@ -171,11 +189,14 @@ class PRListScreen(Screen):
             self.query_one("#recent-preview", PRPreviewWidget).update(summaries[0])
             widget.focus()
 
-    def _apply_review_requested(self, summaries: list[PRSummary]) -> None:
+    def _apply_review_requested(
+        self, summaries: list[PRSummary], cached_at: datetime | None = None
+    ) -> None:
         """Populate Review Requested from GitHub."""
         widget = self.query_one("#review-list", PRListWidget)
         widget.load(summaries)
-        widget.border_title = f"Review Requested ({len(summaries)})"
+        title = f"Review Requested ({len(summaries)})"
+        widget.border_title = title + " [bold yellow]↻[/]" if _is_stale(cached_at) else title
         if summaries:
             self._selected_review = summaries[0]
             self.query_one("#review-preview", PRPreviewWidget).update(summaries[0])
@@ -271,7 +292,7 @@ class PRListScreen(Screen):
             self._load_history()
         else:
             self._review_loaded = False
-            self._fetch_review_requested()
+            self._fetch_review_requested(force_refresh=True)
             self._review_loaded = True
 
     def action_open_in_browser(self) -> None:

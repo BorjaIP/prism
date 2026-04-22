@@ -1,12 +1,25 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from rich.text import Text
 from textual.app import ComposeResult
 from textual.widget import Widget
 from textual.widgets import Static
 
 from prism.components.blocks.badges import CHECKS_STATUS_STYLES, REVIEW_STATE_STYLES, STATE_STYLES
+from prism.constants import PR_LIST_STALE_AFTER
 from prism.models import PRMetadata
+
+_STALE_ICON = "↻"
+_STALE_STYLE = "bold yellow"
+
+
+def _is_stale(cached_at: datetime | None) -> bool:
+    if cached_at is None:
+        return False
+    age = (datetime.now(tz=UTC) - cached_at).total_seconds()
+    return age > PR_LIST_STALE_AFTER
 
 
 class HeaderBar(Widget):
@@ -22,9 +35,10 @@ class HeaderBar(Widget):
     }
     """
 
-    def __init__(self, pr: PRMetadata) -> None:
+    def __init__(self, pr: PRMetadata, cached_at: datetime | None = None) -> None:
         super().__init__(id="header-bar")
         self._pr = pr
+        self._cached_at = cached_at
 
     def _build_line1(self) -> Text:
         pr = self._pr
@@ -46,6 +60,8 @@ class HeaderBar(Widget):
             )
             line1.append("  ")
             line1.append(ci_label, style=ci_style)
+        if _is_stale(self._cached_at):
+            line1.append(f"  {_STALE_ICON} outdated — press ctrl+r", style=_STALE_STYLE)
         return line1
 
     def _build_line2(self) -> Text:
@@ -72,3 +88,10 @@ class HeaderBar(Widget):
         """Refresh the header to show the current review state."""
         self._pr = self._pr.model_copy(update={"review_state": review_state})
         self.query_one("#header-line1", Static).update(self._build_line1())
+
+    def update_pr(self, pr: PRMetadata, cached_at: datetime | None) -> None:
+        """Replace PR data and staleness timestamp, then re-render both lines."""
+        self._pr = pr
+        self._cached_at = cached_at
+        self.query_one("#header-line1", Static).update(self._build_line1())
+        self.query_one("#header-line2", Static).update(self._build_line2())
