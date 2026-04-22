@@ -35,9 +35,9 @@ class ReviewWorkspace(Widget):
 
     def compose(self) -> ComposeResult:
         yield FileTreePanel(self._pr.files, self._pr.review_comments)
-        yield PanelResizer("file-tree-panel", "diff-viewer")
+        yield PanelResizer("file-tree-panel", "diff-viewer", flex="right")
         yield DiffViewer(self._pr.review_comments)
-        yield PanelResizer("diff-viewer", "comments-panel")
+        yield PanelResizer("diff-viewer", "comments-panel", flex="left")
         yield CommentsPanel(self._repo_slug, self._pr_number)
         yield PanelResizer("comments-panel", "ai-panel")
         ai = AIPanel(self._pr, self._repo_slug, self._pr_number)

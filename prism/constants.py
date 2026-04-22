@@ -21,6 +21,7 @@ THEMES_DIR: Path = PRISM_CONFIG_DIR / "themes"
 # ── App ───────────────────────────────────────────────────────────────────────
 
 APP_TITLE = "PRism"
+CSS_PATH = Path(__file__).parent / "style" / "prism.tcss"
 
 # ── GitHub ────────────────────────────────────────────────────────────────────
 

@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 from textual.app import App
 
 from prism.commands import PrismProvider, ThemeProvider
 from prism.config import load_config
+from prism.constants import CSS_PATH
 from prism.themes import load_theme
-
-CSS_PATH = Path(__file__).parent / "style" / "prism.tcss"
 
 
 class PRismApp(App):
