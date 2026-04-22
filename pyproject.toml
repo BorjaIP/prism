@@ -32,6 +32,9 @@ prism = "prism.cli:app"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = [
+    "smoke: end-to-end TUI smoke tests (require Textual headless driver)",
+]
 
 [tool.ruff]
 line-length = 100

@@ -101,9 +101,14 @@ class CommentsPanel(Widget):
     @work(thread=True, exclusive=True)
     def _fetch_data(self) -> None:
         """Fetch comments and reviews in a background thread."""
-        comments = fetch_comments(self._repo_slug, self._pr_number)
-        reviews = fetch_reviews(self._repo_slug, self._pr_number)
-        self.app.call_from_thread(self._on_data_loaded, comments, reviews)
+        try:
+            comments = fetch_comments(self._repo_slug, self._pr_number)
+            reviews = fetch_reviews(self._repo_slug, self._pr_number)
+            self.app.call_from_thread(self._on_data_loaded, comments, reviews)
+        except Exception as e:
+            self.app.call_from_thread(
+                self.notify, f"Could not load comments: {e}", severity="warning"
+            )
 
     def _on_data_loaded(self, comments: list[PRComment], reviews: list[PRReview]) -> None:
         """Store fetched data and update the UI (main thread)."""
