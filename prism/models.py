@@ -74,9 +74,7 @@ class PRMetadata(BaseModel):
     review_state: str | None = (
         None  # "APPROVED" | "CHANGES_REQUESTED" — set locally after submitting
     )
-    review_comments: list[
-        "PRComment"
-    ] = []  # inline review comments pre-loaded at fetch time
+    review_comments: list[PRComment] = []  # inline review comments pre-loaded at fetch time
     checks_status: str | None = (
         None  # "passing" | "failing" | "pending" from combined commit status
     )

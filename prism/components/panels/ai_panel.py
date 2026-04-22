@@ -107,9 +107,7 @@ class AIPanel(Widget):
         self.query_one("#ai-empty").display = False
         self.query_one("#ai-scroll").display = True
 
-        self.query_one("#ai-summary", Markdown).update(
-            f"**Summary**\n\n{analysis.summary}"
-        )
+        self.query_one("#ai-summary", Markdown).update(f"**Summary**\n\n{analysis.summary}")
 
         label, style = RISK_BADGE_STYLES.get(
             analysis.risk.lower(), (" UNKNOWN ", "bold white on grey50")

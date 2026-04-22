@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import re
-from typing import Optional
 
 import typer
 
@@ -24,11 +23,11 @@ def _parse_github_url(url: str) -> tuple[str, int] | None:
 
 @app.command()
 def main(
-    repo_or_url: Optional[str] = typer.Argument(
+    repo_or_url: str | None = typer.Argument(
         default=None,
         help="GitHub PR URL or 'owner/repo'. Omit to open the PR browser.",
     ),
-    pr_number: Optional[int] = typer.Argument(
+    pr_number: int | None = typer.Argument(
         default=None, help="PR number (only needed with 'owner/repo' format)."
     ),
 ) -> None:

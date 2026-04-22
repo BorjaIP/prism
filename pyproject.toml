@@ -19,8 +19,17 @@ dependencies = [
     "diskcache>=5.6",
 ]
 
+[dependency-groups]
+dev = [
+    "ruff>=0.15.11",
+]
+
 [project.scripts]
 prism = "prism.cli:app"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
 
 [tool.ruff]
 line-length = 100

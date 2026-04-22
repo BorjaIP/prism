@@ -189,9 +189,7 @@ class ReviewScreen(Screen):
 
     # ── File selection ──────────────────────────────────────────────────────
 
-    def on_file_tree_panel_file_selected(
-        self, event: FileTreePanel.FileSelected
-    ) -> None:
+    def on_file_tree_panel_file_selected(self, event: FileTreePanel.FileSelected) -> None:
         """Handle file selection from the tree."""
         self.query_one(DiffViewer).show_diff(event.pr_file)
         self.query_one(CommentsPanel).set_selected_file(event.pr_file.filename)
@@ -199,9 +197,7 @@ class ReviewScreen(Screen):
 
     def on_ai_panel_analysis_complete(self, event: AIPanel.AnalysisComplete) -> None:
         """Propagate AI risk level to the file tree badge."""
-        self.query_one(FileTreePanel).update_risk_badge(
-            event.filename, event.analysis.risk
-        )
+        self.query_one(FileTreePanel).update_risk_badge(event.filename, event.analysis.risk)
 
     # ── Real refresh ────────────────────────────────────────────────────────
 
@@ -222,13 +218,9 @@ class ReviewScreen(Screen):
             self.app.call_from_thread(self._apply_refresh, pr)
         except GithubException as e:
             msg = e.data.get("message", str(e)) if isinstance(e.data, dict) else str(e)
-            self.app.call_from_thread(
-                self.notify, f"Refresh failed: {msg}", severity="error"
-            )
+            self.app.call_from_thread(self.notify, f"Refresh failed: {msg}", severity="error")
         except Exception as e:
-            self.app.call_from_thread(
-                self.notify, f"Refresh failed: {e}", severity="error"
-            )
+            self.app.call_from_thread(self.notify, f"Refresh failed: {e}", severity="error")
 
     def _apply_refresh(self, pr: PRMetadata) -> None:
         """Update all widgets with freshly fetched PR data (main thread)."""
@@ -285,9 +277,7 @@ class ReviewScreen(Screen):
                 line=line,
                 body=body,
             )
-            self.app.call_from_thread(
-                self.query_one(CommentsPanel).add_comment, comment
-            )
+            self.app.call_from_thread(self.query_one(CommentsPanel).add_comment, comment)
             self.app.call_from_thread(
                 self.notify,
                 f"Comment posted on {path}:{line}",
@@ -295,15 +285,11 @@ class ReviewScreen(Screen):
             )
         except GithubException as e:
             msg = e.data.get("message", str(e)) if isinstance(e.data, dict) else str(e)
-            self.app.call_from_thread(
-                self.notify, f"GitHub error: {msg}", severity="error"
-            )
+            self.app.call_from_thread(self.notify, f"GitHub error: {msg}", severity="error")
         except RuntimeError as e:
             self.app.call_from_thread(self.notify, str(e), severity="error")
         except Exception as e:
-            self.app.call_from_thread(
-                self.notify, f"Failed to post comment: {e}", severity="error"
-            )
+            self.app.call_from_thread(self.notify, f"Failed to post comment: {e}", severity="error")
 
     # ── Approve / Request changes ───────────────────────────────────────────
 
@@ -327,20 +313,14 @@ class ReviewScreen(Screen):
             submit_review(self._repo_slug, self._pr_number, event="APPROVE")
             self._pr = self._pr.model_copy(update={"review_state": "APPROVED"})
             self.app.call_from_thread(self._update_header)
-            self.app.call_from_thread(
-                self.notify, "PR approved", severity="information"
-            )
+            self.app.call_from_thread(self.notify, "PR approved", severity="information")
         except GithubException as e:
             msg = e.data.get("message", str(e)) if isinstance(e.data, dict) else str(e)
-            self.app.call_from_thread(
-                self.notify, f"Approve failed: {msg}", severity="error"
-            )
+            self.app.call_from_thread(self.notify, f"Approve failed: {msg}", severity="error")
         except RuntimeError as e:
             self.app.call_from_thread(self.notify, str(e), severity="error")
         except Exception as e:
-            self.app.call_from_thread(
-                self.notify, f"Approve failed: {e}", severity="error"
-            )
+            self.app.call_from_thread(self.notify, f"Approve failed: {e}", severity="error")
 
     def action_request_changes(self) -> None:
         self.app.push_screen(
@@ -368,9 +348,7 @@ class ReviewScreen(Screen):
             )
             self._pr = self._pr.model_copy(update={"review_state": "CHANGES_REQUESTED"})
             self.app.call_from_thread(self._update_header)
-            self.app.call_from_thread(
-                self.notify, "Changes requested", severity="warning"
-            )
+            self.app.call_from_thread(self.notify, "Changes requested", severity="warning")
         except GithubException as e:
             msg = e.data.get("message", str(e)) if isinstance(e.data, dict) else str(e)
             self.app.call_from_thread(
@@ -379,18 +357,14 @@ class ReviewScreen(Screen):
         except RuntimeError as e:
             self.app.call_from_thread(self.notify, str(e), severity="error")
         except Exception as e:
-            self.app.call_from_thread(
-                self.notify, f"Request changes failed: {e}", severity="error"
-            )
+            self.app.call_from_thread(self.notify, f"Request changes failed: {e}", severity="error")
 
     def _update_header(self) -> None:
         self.query_one(HeaderBar).update_review_state(self._pr.review_state)
 
     # ── Reply ───────────────────────────────────────────────────────────────
 
-    def on_comment_list_reply_requested(
-        self, event: CommentList.ReplyRequested
-    ) -> None:
+    def on_comment_list_reply_requested(self, event: CommentList.ReplyRequested) -> None:
         self.app.push_screen(
             ReplyComposer(event.comment),
             callback=self._on_reply_submitted,
@@ -425,20 +399,14 @@ class ReviewScreen(Screen):
                 body=body,
             )
             self.app.call_from_thread(self.query_one(CommentsPanel).add_comment, reply)
-            self.app.call_from_thread(
-                self.notify, "Reply posted", severity="information"
-            )
+            self.app.call_from_thread(self.notify, "Reply posted", severity="information")
         except GithubException as e:
             msg = e.data.get("message", str(e)) if isinstance(e.data, dict) else str(e)
-            self.app.call_from_thread(
-                self.notify, f"Reply failed: {msg}", severity="error"
-            )
+            self.app.call_from_thread(self.notify, f"Reply failed: {msg}", severity="error")
         except RuntimeError as e:
             self.app.call_from_thread(self.notify, str(e), severity="error")
         except Exception as e:
-            self.app.call_from_thread(
-                self.notify, f"Reply failed: {e}", severity="error"
-            )
+            self.app.call_from_thread(self.notify, f"Reply failed: {e}", severity="error")
 
     # ── Quit ────────────────────────────────────────────────────────────────
 
@@ -491,9 +459,7 @@ class ReviewScreen(Screen):
             )
         except GithubException as e:
             msg = e.data.get("message", str(e)) if isinstance(e.data, dict) else str(e)
-            self.app.call_from_thread(
-                self.notify, f"GitHub error: {msg}", severity="error"
-            )
+            self.app.call_from_thread(self.notify, f"GitHub error: {msg}", severity="error")
         except RuntimeError as e:
             self.app.call_from_thread(self.notify, str(e), severity="error")
         except Exception as e:

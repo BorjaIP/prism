@@ -1,5 +1,3 @@
-"""Unit tests for approve/request-changes review actions."""
-
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
@@ -25,9 +23,7 @@ def _make_pr(**kwargs) -> PRMetadata:
 
 class TestSubmitReview:
     @patch("prism.services.github._get_client")
-    def test_submit_approve_calls_create_review(
-        self, mock_get_client: MagicMock
-    ) -> None:
+    def test_submit_approve_calls_create_review(self, mock_get_client: MagicMock) -> None:
         from prism.services.github import submit_review
 
         mock_pr = MagicMock()
@@ -40,9 +36,7 @@ class TestSubmitReview:
         mock_pr.create_review.assert_called_once_with(body="", event="APPROVE")
 
     @patch("prism.services.github._get_client")
-    def test_submit_request_changes_passes_body(
-        self, mock_get_client: MagicMock
-    ) -> None:
+    def test_submit_request_changes_passes_body(self, mock_get_client: MagicMock) -> None:
         from prism.services.github import submit_review
 
         mock_pr = MagicMock()
@@ -57,10 +51,9 @@ class TestSubmitReview:
         )
 
     @patch("prism.services.github._get_client")
-    def test_submit_review_raises_github_exception(
-        self, mock_get_client: MagicMock
-    ) -> None:
+    def test_submit_review_raises_github_exception(self, mock_get_client: MagicMock) -> None:
         from github import GithubException
+
         from prism.services.github import submit_review
 
         mock_pr = MagicMock()
@@ -95,6 +88,7 @@ class TestRequestChangesModal:
     @pytest.mark.asyncio
     async def test_cancel_returns_none(self) -> None:
         from textual.app import App, ComposeResult
+
         from prism.components.modals.review_modals import RequestChangesModal
 
         result: list[str | None] = []
@@ -118,6 +112,7 @@ class TestRequestChangesModal:
     async def test_submit_returns_body_text(self) -> None:
         from textual.app import App, ComposeResult
         from textual.widgets import TextArea
+
         from prism.components.modals.review_modals import RequestChangesModal
 
         result: list[str | None] = []

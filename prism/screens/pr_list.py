@@ -185,26 +185,20 @@ class PRListScreen(Screen):
     def _set_review_title(self, suffix: str) -> None:
         """Show/hide the loading indicator and update the border title."""
         if suffix:
-            self.query_one(
-                "#review-switcher", ContentSwitcher
-            ).current = "review-loading"
+            self.query_one("#review-switcher", ContentSwitcher).current = "review-loading"
         else:
             self.query_one("#review-switcher", ContentSwitcher).current = "review-pane"
 
     # ── Tab switching ─────────────────────────────────────────────────────────
 
-    def on_tabbed_content_tab_activated(
-        self, event: TabbedContent.TabActivated
-    ) -> None:
+    def on_tabbed_content_tab_activated(self, event: TabbedContent.TabActivated) -> None:
         if event.tab.id == _TAB_REVIEW and not self._review_loaded:
             self._review_loaded = True
             self._fetch_review_requested()
 
     # ── Message handlers (cursor movement only) ───────────────────────────────
 
-    def on_pr_list_widget_pr_highlighted(
-        self, event: PRListWidget.PRHighlighted
-    ) -> None:
+    def on_pr_list_widget_pr_highlighted(self, event: PRListWidget.PRHighlighted) -> None:
         if event.source_id == "recent-list":
             self._selected_recent = event.summary
             self.query_one("#recent-preview", PRPreviewWidget).update(event.summary)
@@ -219,9 +213,7 @@ class PRListScreen(Screen):
 
     def action_open_selected(self) -> None:
         selected = (
-            self._selected_recent
-            if self._active_tab() == _TAB_RECENT
-            else self._selected_review
+            self._selected_recent if self._active_tab() == _TAB_RECENT else self._selected_review
         )
         if selected is None:
             self.notify("No PR selected.", severity="warning")
@@ -230,9 +222,7 @@ class PRListScreen(Screen):
 
     def action_delete_pr(self) -> None:
         if self._active_tab() != _TAB_RECENT:
-            self.notify(
-                "Remove is only available in Recently Reviewed.", severity="warning"
-            )
+            self.notify("Remove is only available in Recently Reviewed.", severity="warning")
             return
         if self._selected_recent is None:
             self.notify("No PR selected.", severity="warning")
@@ -251,9 +241,7 @@ class PRListScreen(Screen):
         widget.border_title = f"Recently Reviewed ({len(widget._summaries)})"
         self._selected_recent = widget._summaries[0] if widget._summaries else None
         if self._selected_recent:
-            self.query_one("#recent-preview", PRPreviewWidget).update(
-                self._selected_recent
-            )
+            self.query_one("#recent-preview", PRPreviewWidget).update(self._selected_recent)
         else:
             self.query_one("#recent-preview", PRPreviewWidget).query_one(
                 "#pr-preview-content"
@@ -264,9 +252,7 @@ class PRListScreen(Screen):
         self._stopping = True
         self.app.push_screen(
             QuitConfirmModal(),
-            callback=lambda confirmed: self.app.exit()
-            if confirmed
-            else self._reset_stopping(),
+            callback=lambda confirmed: self.app.exit() if confirmed else self._reset_stopping(),
         )
 
     def _reset_stopping(self) -> None:
@@ -291,9 +277,7 @@ class PRListScreen(Screen):
 
     def action_open_in_browser(self) -> None:
         selected = (
-            self._selected_recent
-            if self._active_tab() == _TAB_RECENT
-            else self._selected_review
+            self._selected_recent if self._active_tab() == _TAB_RECENT else self._selected_review
         )
         if selected and selected.html_url:
             webbrowser.open(selected.html_url)

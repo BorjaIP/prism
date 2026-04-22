@@ -251,7 +251,6 @@ def _theme_from_base16_colors(name: str, c: dict[str, str]) -> PrismTheme:
     bg = c.get("color00", "#1d1f21")  # base00 — darkest bg
     surface = c.get("color18", "#282a2e")  # base01
     panel = c.get("color19", "#373b41")  # base02
-    muted = c.get("color08", "#969896")  # base03 — comments
     red = c.get("color01", "#cc6666")  # base08
     green = c.get("color02", "#b5bd68")  # base0B
     yellow = c.get("color03", "#f0c674")  # base0A
@@ -259,7 +258,6 @@ def _theme_from_base16_colors(name: str, c: dict[str, str]) -> PrismTheme:
     magenta = c.get("color05", "#b294bb")  # base0E
     cyan = c.get("color06", "#8abeb7")  # base0C
     fg = c.get("color07", "#c5c8c6")  # base05 — default fg
-    orange = c.get("color16", "#de935f")  # base09
 
     return PrismTheme(
         name=name,
@@ -328,9 +326,7 @@ def list_base16_themes() -> list[str]:
     """Return sorted list of available base16 theme short names."""
     if not BASE16_SCRIPTS_DIR.exists():
         return []
-    return sorted(
-        p.stem.removeprefix("base16-") for p in BASE16_SCRIPTS_DIR.glob("base16-*.sh")
-    )
+    return sorted(p.stem.removeprefix("base16-") for p in BASE16_SCRIPTS_DIR.glob("base16-*.sh"))
 
 
 # ── Public loader ─────────────────────────────────────────────────────────────

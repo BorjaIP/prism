@@ -1,13 +1,10 @@
-"""Tests for CommentComposerScreen modal."""
-
 from __future__ import annotations
 
 import pytest
-
 from textual.app import App, ComposeResult
 
-from prism.models import Comment
 from prism.components.modals.comment_composer import CommentComposerScreen
+from prism.models import Comment
 
 
 class _ComposerApp(App):
@@ -89,11 +86,9 @@ async def test_esc_cancels_and_returns_none() -> None:
 @pytest.mark.asyncio
 async def test_ctrl_s_submits_valid_comment() -> None:
     """Ctrl+S submits a valid comment when text is present."""
-    from textual.widgets import TextArea
 
     app = _ComposerApp("src/app.py", 7)
     async with app.run_test() as pilot:
-        area = app.screen.query_one("#comment-area", TextArea)
         await pilot.click("#comment-area")
         # Type some text
         for char in "This looks good":

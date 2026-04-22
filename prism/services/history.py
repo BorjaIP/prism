@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from prism.models import PRMetadata, PRSummary
@@ -11,7 +11,7 @@ _MAX_ENTRIES = 50
 
 
 def _now_iso() -> str:
-    return datetime.now(tz=timezone.utc).isoformat()
+    return datetime.now(tz=UTC).isoformat()
 
 
 def _load_raw() -> list[dict]:
@@ -38,9 +38,7 @@ def save_to_history(pr: PRMetadata, repo_slug: str) -> None:
 
     # Remove any existing entry for the same PR so we can re-insert at top
     entries = [
-        e
-        for e in entries
-        if not (e.get("repo_slug") == repo_slug and e.get("number") == pr.number)
+        e for e in entries if not (e.get("repo_slug") == repo_slug and e.get("number") == pr.number)
     ]
 
     entry = {
@@ -70,9 +68,7 @@ def delete_from_history(repo_slug: str, pr_number: int) -> None:
     """Remove a specific PR entry from the local history file."""
     entries = _load_raw()
     entries = [
-        e
-        for e in entries
-        if not (e.get("repo_slug") == repo_slug and e.get("number") == pr_number)
+        e for e in entries if not (e.get("repo_slug") == repo_slug and e.get("number") == pr_number)
     ]
     HISTORY_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(HISTORY_PATH, "w") as f:

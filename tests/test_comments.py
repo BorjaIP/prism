@@ -1,13 +1,9 @@
-"""Unit tests for comment fetching and grouping."""
-
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
-import pytest
-
-from prism.models import PRComment, PRReview
+from prism.models import PRComment
 from prism.services.github import group_comments_by_file
 
 
@@ -23,7 +19,7 @@ def _make_comment(
         id=id,
         body=body,
         author="user",
-        created_at=created_at or datetime(2024, 1, 1, tzinfo=timezone.utc),
+        created_at=created_at or datetime(2024, 1, 1, tzinfo=UTC),
         path=path,
         line=line,
         in_reply_to_id=in_reply_to_id,
@@ -60,14 +56,14 @@ class TestGroupCommentsByFile:
             "src/a.py",
             10,
             in_reply_to_id=1,
-            created_at=datetime(2024, 1, 1, 1, tzinfo=timezone.utc),
+            created_at=datetime(2024, 1, 1, 1, tzinfo=UTC),
         )
         reply2 = _make_comment(
             3,
             "src/a.py",
             10,
             in_reply_to_id=1,
-            created_at=datetime(2024, 1, 1, 2, tzinfo=timezone.utc),
+            created_at=datetime(2024, 1, 1, 2, tzinfo=UTC),
         )
         comments = [reply2, reply1, root]  # scrambled order
         result = group_comments_by_file(comments)
@@ -80,7 +76,7 @@ class TestGroupCommentsByFile:
             id=2,
             body="general",
             author="user",
-            created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+            created_at=datetime(2024, 1, 1, tzinfo=UTC),
             path=None,
         )
         result = group_comments_by_file([comment_with_path, comment_no_path])
@@ -99,7 +95,7 @@ class TestFetchComments:
         mock_comment.id = 42
         mock_comment.body = "This needs fixing"
         mock_comment.user.login = "reviewer"
-        mock_comment.created_at = datetime(2024, 6, 1, tzinfo=timezone.utc)
+        mock_comment.created_at = datetime(2024, 6, 1, tzinfo=UTC)
         mock_comment.path = "src/main.py"
         mock_comment.line = 15
         mock_comment.original_line = 15
@@ -135,7 +131,7 @@ class TestFetchReviews:
         mock_review.body = "Looks good overall"
         mock_review.user.login = "approver"
         mock_review.state = "APPROVED"
-        mock_review.submitted_at = datetime(2024, 6, 1, tzinfo=timezone.utc)
+        mock_review.submitted_at = datetime(2024, 6, 1, tzinfo=UTC)
         mock_review.html_url = "https://github.com/example/repo/pull/1#pullrequestreview-99"
 
         mock_pr = MagicMock()

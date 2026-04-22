@@ -105,9 +105,7 @@ class CommentsPanel(Widget):
         reviews = fetch_reviews(self._repo_slug, self._pr_number)
         self.app.call_from_thread(self._on_data_loaded, comments, reviews)
 
-    def _on_data_loaded(
-        self, comments: list[PRComment], reviews: list[PRReview]
-    ) -> None:
+    def _on_data_loaded(self, comments: list[PRComment], reviews: list[PRReview]) -> None:
         """Store fetched data and update the UI (main thread)."""
         self._all_comments = comments
         self._all_reviews = reviews

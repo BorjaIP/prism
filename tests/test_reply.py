@@ -1,8 +1,6 @@
-"""Unit tests for the reply-to-comment feature."""
-
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -15,7 +13,7 @@ def _make_comment(**kwargs) -> PRComment:
         id=1,
         body="Please fix this",
         author="reviewer",
-        created_at=datetime(2024, 6, 1, tzinfo=timezone.utc),
+        created_at=datetime(2024, 6, 1, tzinfo=UTC),
         path="src/main.py",
         line=42,
         diff_hunk="@@ -40,5 +40,7 @@",
@@ -27,16 +25,14 @@ def _make_comment(**kwargs) -> PRComment:
 
 class TestPostReply:
     @patch("prism.services.github._get_client")
-    def test_post_reply_calls_create_review_comment_reply(
-        self, mock_get_client: MagicMock
-    ) -> None:
+    def test_post_reply_calls_create_review_comment_reply(self, mock_get_client: MagicMock) -> None:
         from prism.services.github import post_reply
 
         mock_reply = MagicMock()
         mock_reply.id = 999
         mock_reply.body = "Fixed!"
         mock_reply.user.login = "author"
-        mock_reply.created_at = datetime(2024, 6, 2, tzinfo=timezone.utc)
+        mock_reply.created_at = datetime(2024, 6, 2, tzinfo=UTC)
         mock_reply.path = "src/main.py"
         mock_reply.line = 42
         mock_reply.diff_hunk = "@@ -40,5 +40,7 @@"
@@ -58,10 +54,9 @@ class TestPostReply:
         assert result.in_reply_to_id == 1
 
     @patch("prism.services.github._get_client")
-    def test_post_reply_raises_github_exception(
-        self, mock_get_client: MagicMock
-    ) -> None:
+    def test_post_reply_raises_github_exception(self, mock_get_client: MagicMock) -> None:
         from github import GithubException
+
         from prism.services.github import post_reply
 
         mock_pr = MagicMock()
@@ -118,6 +113,7 @@ class TestReplyComposer:
     @pytest.mark.asyncio
     async def test_escape_dismisses_with_none(self) -> None:
         from textual.app import App, ComposeResult
+
         from prism.components.modals.reply_composer import ReplyComposer
 
         result: list[str | None] = []
@@ -139,6 +135,7 @@ class TestReplyComposer:
     async def test_ctrl_s_with_text_dismisses_with_body(self) -> None:
         from textual.app import App, ComposeResult
         from textual.widgets import TextArea
+
         from prism.components.modals.reply_composer import ReplyComposer
 
         result: list[str | None] = []
@@ -161,6 +158,7 @@ class TestReplyComposer:
     async def test_empty_submit_shows_error(self) -> None:
         from textual.app import App, ComposeResult
         from textual.widgets import Label
+
         from prism.components.modals.reply_composer import ReplyComposer
 
         result: list[str | None] = []
@@ -175,9 +173,7 @@ class TestReplyComposer:
 
         async with _TestApp().run_test() as pilot:
             await pilot.click("#submit")
-            error_text = str(
-                pilot.app.screen.query_one("#reply-error", Label).render()
-            )
+            error_text = str(pilot.app.screen.query_one("#reply-error", Label).render())
 
         # Modal should still be open (result not populated yet)
         assert result == []
@@ -189,8 +185,12 @@ class TestPRMetadataReviewComments:
         from prism.models import PRMetadata
 
         pr = PRMetadata(
-            number=1, title="T", author="u", state="open",
-            base_branch="main", head_branch="feature",
+            number=1,
+            title="T",
+            author="u",
+            state="open",
+            base_branch="main",
+            head_branch="feature",
         )
         assert pr.review_comments == []
 
@@ -199,8 +199,12 @@ class TestPRMetadataReviewComments:
 
         comment = _make_comment()
         pr = PRMetadata(
-            number=1, title="T", author="u", state="open",
-            base_branch="main", head_branch="feature",
+            number=1,
+            title="T",
+            author="u",
+            state="open",
+            base_branch="main",
+            head_branch="feature",
             review_comments=[comment],
         )
         assert len(pr.review_comments) == 1

@@ -1,8 +1,6 @@
-"""Unit tests for post_comment() service function."""
-
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -10,16 +8,14 @@ import pytest
 
 class TestPostComment:
     @patch("prism.services.github._get_client")
-    def test_posts_comment_and_returns_pr_comment(
-        self, mock_get_client: MagicMock
-    ) -> None:
+    def test_posts_comment_and_returns_pr_comment(self, mock_get_client: MagicMock) -> None:
         from prism.services.github import post_comment
 
         mock_comment = MagicMock()
         mock_comment.id = 123
         mock_comment.body = "This needs a fix"
         mock_comment.user.login = "reviewer"
-        mock_comment.created_at = datetime(2024, 6, 1, tzinfo=timezone.utc)
+        mock_comment.created_at = datetime(2024, 6, 1, tzinfo=UTC)
         mock_comment.path = "src/main.py"
         mock_comment.line = 42
         mock_comment.diff_hunk = "@@ -40,5 +40,7 @@"
@@ -54,10 +50,9 @@ class TestPostComment:
         assert result.line == 42
 
     @patch("prism.services.github._get_client")
-    def test_raises_github_exception_on_api_error(
-        self, mock_get_client: MagicMock
-    ) -> None:
+    def test_raises_github_exception_on_api_error(self, mock_get_client: MagicMock) -> None:
         from github import GithubException
+
         from prism.services.github import post_comment
 
         mock_pr = MagicMock()

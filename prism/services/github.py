@@ -57,9 +57,7 @@ def fetch_my_prs(state: str = "open") -> list[PRSummary]:
 def fetch_review_requested() -> list[PRSummary]:
     """Fetch open PRs where the authenticated user is requested as reviewer (single search call)."""
     client = _get_client()
-    results = client.search_issues(
-        "is:pr is:open review-requested:@me sort:updated-desc"
-    )
+    results = client.search_issues("is:pr is:open review-requested:@me sort:updated-desc")
     return [s for issue in results if (s := _issue_to_summary(issue)) is not None]
 
 
@@ -328,9 +326,7 @@ def group_comments_by_file(
         ordered: list[PRComment] = []
         for root in roots:
             ordered.append(root)
-            for reply in sorted(
-                replies_by_root.get(root.id, []), key=lambda c: c.created_at
-            ):
+            for reply in sorted(replies_by_root.get(root.id, []), key=lambda c: c.created_at):
                 ordered.append(reply)
 
         grouped[path] = ordered

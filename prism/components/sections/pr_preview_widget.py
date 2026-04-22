@@ -38,7 +38,9 @@ def _build_preview(summary: PRSummary) -> RenderableType:
 
     # Review status
     if summary.review_state:
-        rv_label, rv_style = REVIEW_LABELS.get(summary.review_state, (summary.review_state, "white"))
+        rv_label, rv_style = REVIEW_LABELS.get(
+            summary.review_state, (summary.review_state, "white")
+        )
         lines.append("Review: ", style="bold")
         lines.append(rv_label + "\n", style=rv_style)
 

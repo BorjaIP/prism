@@ -102,9 +102,7 @@ def _call_claude_code(prompt: str, *, model: str) -> str:
         timeout=60,
     )
     if result.returncode != 0:
-        raise RuntimeError(
-            f"claude CLI failed: {result.stderr.strip() or 'no error output'}"
-        )
+        raise RuntimeError(f"claude CLI failed: {result.stderr.strip() or 'no error output'}")
     data = json.loads(result.stdout)
     if data.get("is_error"):
         raise RuntimeError(f"claude CLI error: {data.get('result', 'unknown error')}")

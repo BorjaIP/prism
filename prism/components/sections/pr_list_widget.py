@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from rich.text import Text
 from textual.message import Message
@@ -14,9 +14,9 @@ from prism.models import PRSummary
 
 
 def _relative_time(dt: datetime) -> str:
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=UTC)
     delta = now - dt
     seconds = int(delta.total_seconds())
     if seconds < 60:
